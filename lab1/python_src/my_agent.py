@@ -3,9 +3,6 @@ from enum import IntEnum
 from copy import deepcopy
 
 
-# q: what is IntEnum?
-# a: https://docs.python.org/3/library/enum.html#others
-
 class Orientation(IntEnum):
 	NORTH, EAST, SOUTH, WEST = 0, 1, 2, 3
 
