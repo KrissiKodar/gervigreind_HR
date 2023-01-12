@@ -52,6 +52,8 @@ class MyAgent(Agent):
 	# this method is called when the environment has reached a terminal state
 	# override it to reset the agent
 	def cleanup(self, percepts):
+		self.position = Point()
+		self.home = Point()
 		self.orientation = Orientation.NORTH
 		self.turned_on = False
 		self.visited = {self.home}
@@ -60,6 +62,7 @@ class MyAgent(Agent):
 		self.r_l = 0 
 		self.change_main = False
 		self.begin_zig_zag = False
+		print("cleanup called")
   
 	def turn_on(self):
 		self.turned_on = True
@@ -83,7 +86,7 @@ class MyAgent(Agent):
 		return "GO"
 
 	def undo_move(self):
-		self.visited.remove(self.position)
+		self.visited.remove(deepcopy(self.position))
 		self.position.move(self.orientation, -1)
 		#return "GO"
 
@@ -114,8 +117,6 @@ class MyAgent(Agent):
 			return self.turn_right()
 		# if percept is empty go
 		if not percepts:
-			# print the debug info for position
-			print("position: " + str(self.position))
 			return self.go()
 
 	#def home(self):
@@ -126,7 +127,8 @@ class MyAgent(Agent):
 	# it needs to return the action the agent wants to execute as as string
 	def next_action(self, percepts):
 		print("percepts: " + str(percepts))
-		# print size of visited
+		print("is home: " + str(self.position == self.home))
+		print("position: " + str(self.position))
 		print("size of visited: " + str(len(self.visited)))
   
 		#if len(self.visited) >= 25:
@@ -156,8 +158,6 @@ class MyAgent(Agent):
 		
   		# if percept is empty go
 		if not percepts:
-			# print the debug infor for position
-			print("position: " + str(self.position))
 			return self.go()
 		
 
