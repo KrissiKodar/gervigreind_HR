@@ -45,7 +45,7 @@ class MyAgent(Agent):
 		self.visited = {self.home}
 		self.n_bumps = 0
 		self.cont = 0
-		self.r_l = 0 # 0 = right, 1 = left	
+		self.r_l = 0 
 		self.change_main = False
 		self.begin_zig_zag = False
 
@@ -57,7 +57,7 @@ class MyAgent(Agent):
 		self.visited = {self.home}
 		self.n_bumps = 0
 		self.cont = 0
-		self.r_l = 0 # 0 = right, 1 = left	
+		self.r_l = 0 
 		self.change_main = False
 		self.begin_zig_zag = False
   
@@ -83,18 +83,55 @@ class MyAgent(Agent):
 		return "GO"
 
 	def undo_move(self):
-		self.visited.remove(deepcopy(self.position))
+		self.visited.remove(self.position)
 		self.position.move(self.orientation, -1)
-		return "GO"
+		#return "GO"
 
 	def suck(self):
 		return "SUCK"
 
-	# this method is called on each time step of the environment
+
+	def zig_zag(self, percepts):
+		if self.cont == 0:
+				self.cont += 1
+				return self.go()
+		elif self.cont == 1:
+			self.cont += 1
+			self.r_l += 1
+			# if self.r_l is odd turn right
+			if self.r_l % 2 == 1:
+				self.change_main = True
+				return self.turn_right()
+			else :
+				self.change_main = False
+				return self.turn_left()
+
+		if "BUMP" in percepts:
+			self.undo_move()
+			self.cont = 0
+			if self.change_main:
+				return self.turn_left()
+			return self.turn_right()
+		# if percept is empty go
+		if not percepts:
+			# print the debug info for position
+			print("position: " + str(self.position))
+			return self.go()
+
+	#def home(self):
+	#	return "GO"
+
+	
+ 	# this method is called on each time step of the environment
 	# it needs to return the action the agent wants to execute as as string
 	def next_action(self, percepts):
 		print("percepts: " + str(percepts))
+		# print size of visited
+		print("size of visited: " + str(len(self.visited)))
   
+		#if len(self.visited) >= 25:
+		#	# return home
+
 		if not self.turned_on:
 			return self.turn_on()
 		
@@ -105,31 +142,10 @@ class MyAgent(Agent):
 			self.begin_zig_zag = True
 
 		if self.begin_zig_zag:
-			if self.cont == 0:
-				self.cont += 1
-				return self.go()
-			elif self.cont == 1:
-				self.cont += 1
-				self.r_l += 1
-				# if self.r_l is odd turn right
-				if self.r_l % 2 == 1:
-					self.change_main = True
-					return self.turn_right()
-				else :
-					self.change_main = False
-					return self.turn_left()
-
-			if "BUMP" in percepts:
-				self.undo_move()
-				self.cont = 0
-				if self.change_main:
-					return self.turn_left()
-				return self.turn_right()
-			# if percept is empty go
-			if not percepts:
-				# print the debug infor for position
-				print("position: " + str(self.position))
-				return self.go()
+			#if len(self.visited) >= 25:
+			#	return home()
+			return self.zig_zag(percepts)
+			
 
 		if "BUMP" in percepts:
 			self.n_bumps += 1
