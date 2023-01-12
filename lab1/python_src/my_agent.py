@@ -48,6 +48,12 @@ class MyAgent(Agent):
 		self.r_l = 0 
 		self.change_main = False
 		self.begin_zig_zag = False
+		self.z_1 = (0,0)
+		self.z_2 = (0,0)
+		self.side_L = 0
+		self.n_goes= 0
+		self.go_home = False
+		self.final_turn = False
 
 	# this method is called when the environment has reached a terminal state
 	# override it to reset the agent
@@ -62,8 +68,14 @@ class MyAgent(Agent):
 		self.r_l = 0 
 		self.change_main = False
 		self.begin_zig_zag = False
+		self.z_1 = (0,0)
+		self.z_2 = (0,0)
+		self.side_L = 0
+		self.n_goes = 0
+		self.go_home = False
+		self.final_turn = False
 		print("cleanup called")
-  
+
 	def turn_on(self):
 		self.turned_on = True
 		return "TURN_ON"
@@ -96,8 +108,14 @@ class MyAgent(Agent):
 
 	def zig_zag(self, percepts):
 		if self.cont == 0:
-				self.cont += 1
-				return self.go()
+			self.cont += 1
+			return self.go()
+		elif "BUMP" in percepts:
+			self.undo_move()
+			self.cont = 0
+			if self.change_main:
+				return self.turn_left()
+			return self.turn_right()
 		elif self.cont == 1:
 			self.cont += 1
 			self.r_l += 1
@@ -108,20 +126,91 @@ class MyAgent(Agent):
 			else :
 				self.change_main = False
 				return self.turn_left()
+		# if percept is empty go
+		if not percepts:
+			return self.go()
+
+	def zig_zag_v2(self, percepts):
+		if self.cont == 0:
+			self.cont += 1
+			self.n_goes += 1
+			return self.go()
+		if self.cont == 1:
+			self.cont += 1
+			self.r_l += 1
+			# if self.r_l is odd turn right
+			if self.r_l % 2 == 1:
+				return self.turn_right()
+			else :
+				return self.turn_left()
+		if self.n_goes == self.side_L*(self.side_L+1):
+			self.go_home = True
+			# if self.side_L + 1 is odd turn left else turn right
+			if (self.side_L + 1) % 2 == 1:
+				return self.turn_left()
+			else:
+				return self.turn_right()
+		if not percepts:
+			print("z_1: " + str(self.z_1))
+			print("z_2: " + str(self.z_2))
+			if self.position.y == self.z_1[1] and not self.change_main:
+				self.cont = 0
+				self.change_main = True
+				return self.turn_left()
+			elif self.position.y == self.z_2[1] and self.change_main:
+				self.cont = 0
+				self.change_main = False
+				return self.turn_right()
+			self.n_goes += 1
+			return self.go()
+			
+	def clean_all(self, percepts):
+		if not self.turned_on and not self.go_home:
+			return self.turn_on()
+		
+		if "DIRT" in percepts:
+			return self.suck()
+ 
+		if self.n_bumps == 3:
+			self.n_bumps = 4
+			self.begin_zig_zag = True
+			self.z_2 = (self.position.x, self.position.y)
+			self.side_L = abs(self.z_2[1] - self.z_1[1])
+
+		if self.begin_zig_zag:
+			return self.zig_zag_v2(percepts)
 
 		if "BUMP" in percepts:
+			self.n_bumps += 1
 			self.undo_move()
-			self.cont = 0
-			if self.change_main:
-				return self.turn_left()
+			if self.n_bumps == 2:
+				self.z_1 = (self.position.x, self.position.y)
 			return self.turn_right()
 		# if percept is empty go
 		if not percepts:
 			return self.go()
 
-	#def home(self):
-	#	return "GO"
 
+	def going_home(self, percepts):
+		# go forward until x or y is 0
+		# then turn to the left
+		# then go forward until x and y are 0 and turn off
+		print("GOING HOME")
+		if self.position.x == 0 and self.position.y == 0:
+			return self.turn_off()
+
+		if (self.position.x == 0 or self.position.y == 0) and self.final_turn == False:
+			self.final_turn = True
+			if (self.side_L % 2 + 1) == 1:
+				return self.turn_left()
+			else:
+				return self.turn_right()
+		# if percept is empty go
+		if not percepts:
+			return self.go()
+
+
+			
 	
  	# this method is called on each time step of the environment
 	# it needs to return the action the agent wants to execute as as string
@@ -130,35 +219,15 @@ class MyAgent(Agent):
 		print("is home: " + str(self.position == self.home))
 		print("position: " + str(self.position))
 		print("size of visited: " + str(len(self.visited)))
-  
+		print("side_L: " + str(self.side_L))
+
 		#if len(self.visited) >= 25:
 		#	# return home
+		if not self.go_home:
+			return self.clean_all(percepts)
+		return self.going_home(percepts)
 
-		if not self.turned_on:
-			return self.turn_on()
 		
-		if "DIRT" in percepts:
-			return self.suck()
-
-		if self.n_bumps == 3:
-			self.begin_zig_zag = True
-
-		if self.begin_zig_zag:
-			#if len(self.visited) >= 25:
-			#	return home()
-			return self.zig_zag(percepts)
-			
-
-		if "BUMP" in percepts:
-			self.n_bumps += 1
-			self.undo_move()
-			if self.change_main:
-				return self.turn_left()
-			return self.turn_right()
-		
-  		# if percept is empty go
-		if not percepts:
-			return self.go()
 		
 
 		
