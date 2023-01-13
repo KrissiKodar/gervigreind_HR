@@ -11,7 +11,6 @@ import re
 import sys
 import random
 from agent import *
-from my_agent import *
 
 #########
 

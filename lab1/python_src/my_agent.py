@@ -105,7 +105,10 @@ class MyAgent(Agent):
 	def suck(self):
 		return "SUCK"
 
-
+	# this is my first zig zag
+	# it used too many bumps, so the total steps were too high
+	# so I made zig_zag_v2 which uses the x and y coordinates to know when to turn
+	# and it is much better
 	def zig_zag(self, percepts):
 		if self.cont == 0:
 			self.cont += 1
@@ -210,8 +213,6 @@ class MyAgent(Agent):
 			return self.go()
 
 
-			
-	
  	# this method is called on each time step of the environment
 	# it needs to return the action the agent wants to execute as as string
 	def next_action(self, percepts):
