@@ -64,11 +64,11 @@ class Environment:
     # That is, the starting position, orientation and position of the dirty cells should be (somewhat) random.
     # for example as shown here:
     # generate all possible positions
-    all_positions = list(itertools.product(range(1, self._width+1), range(1, self._height+1)))
+    self.all_positions = list(itertools.product(range(1, self._width+1), range(1, self._height+1)))
     # randomly choose a home location
-    home = random.choice(all_positions)
+    self.home = random.choice(self.all_positions)
     # randomly choose locations for dirt
-    dirts = random.sample(all_positions, nb_dirts)
+    self.dirts = random.sample(self.all_positions, nb_dirts)
     return
 
   def get_initial_state(self):
@@ -81,9 +81,9 @@ class Environment:
     if not state.turned_on:
       actions.append("TURN_ON")
     else:
-      if True: # should be only possible when agent has returned home
+      if state.position == self.home: # should be only possible when agent has returned home
         actions.append("TURN_OFF")
-      if True: # should be only possible if there is dirt in the current position
+      if state.position == self.dirts: # should be only possible if there is dirt in the current position
         actions.append("SUCK")
       if True: # should be only possible when next position is inside the grid (avoid bumping in walls)
         actions.append("GO")
