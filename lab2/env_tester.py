@@ -106,7 +106,7 @@ def main(argv):
     print("Your estimate is off by a factor of %.2f (Why?)" % factor_off) 
   else:
     print("Your estimate was exactly right!")
-  print("Generating those states took: %.2fs (%.0f states/s)" % ((end_time-start_time)/10**9, 10**9*len(states)/(end_time-start_time)))
+  #print("Generating those states took: %.2fs (%.0f states/s)" % ((end_time-start_time)/10**9, 10**9*len(states)/(end_time-start_time)))
 
   # estimate size of states in memory
   size_of_all_states = pysize.get_size(states)
