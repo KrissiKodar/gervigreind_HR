@@ -47,8 +47,8 @@ class State:
   def __eq__(self, other):
     # TODO: modify as needed
     # are the attributes of this state the same as the attributes of the other state?
-    return self.turned_on == other.turned_on and self.position == other.position and self.dirts_left == other.dirts_left and self.orientation == other.orientation
-    #return hash(self) == hash(other) 
+    #return self.turned_on == other.turned_on and self.position == other.position and self.dirts_left == other.dirts_left and self.orientation == other.orientation
+    return hash(self) == hash(other) 
 
 ##############
 
@@ -75,14 +75,16 @@ class Environment:
 
   def move(self, state):
     # return position after moving forward
+    x = state.position[0]
+    y = state.position[1]
     if Orientation.NORTH == state.orientation:
-      return (state.position[0], state.position[1]+1)
-    if Orientation.EAST == state.orientation:
-      return (state.position[0]+1, state.position[1])
-    if Orientation.SOUTH == state.orientation:
-      return (state.position[0], state.position[1]-1)
-    if Orientation.WEST == state.orientation:
-      return (state.position[0]-1, state.position[1])
+      return (x, y+1)
+    elif Orientation.EAST == state.orientation:
+      return (x+1, y)
+    elif Orientation.SOUTH == state.orientation:
+      return (x, y-1)
+    elif Orientation.WEST == state.orientation:
+      return (x-1, y)
   
   def get_legal_actions(self, state):
     actions = []
@@ -103,18 +105,18 @@ class Environment:
   def get_next_state(self, state, action):
     # TODO: add missing actions
     if action == "TURN_ON":
-      return State(True, state.position, tuple(self.dirts), state.orientation)
+      return State(True, state.position, state.dirts_left, state.orientation)
     elif action == "TURN_OFF":
-      return State(False, state.position, tuple(self.dirts), state.orientation)
+      return State(False, state.position, state.dirts_left, state.orientation)
     elif action == "TURN_LEFT":
-      return State(state.turned_on, state.position, tuple(self.dirts), state.orientation-1)
+      return State(state.turned_on, state.position, state.dirts_left, state.orientation-1)
     elif action == "TURN_RIGHT":
-      return State(state.turned_on, state.position, tuple(self.dirts), state.orientation+1)
+      return State(state.turned_on, state.position, state.dirts_left, state.orientation+1)
     elif action == "GO":
-      return State(state.turned_on, self.move(state), tuple(self.dirts), state.orientation)
+      return State(state.turned_on, self.move(state), state.dirts_left, state.orientation)
     elif action == "SUCK":
-      self.dirts.remove(state.position)
-      return State(state.turned_on, state.position, tuple(self.dirts), state.orientation)
+      new_dirts_left = tuple(filter(lambda x: x != state.position, state.dirts_left))
+      return State(state.turned_on, state.position, new_dirts_left, state.orientation)
     else:
       raise Exception("Unknown action %s" % str(action))
 
@@ -146,5 +148,5 @@ class Environment:
 def expected_number_of_states(width, height, nb_dirts):
   # TODO: return a reasonable upper bound on number of possible states
   n_grid_cells = width * height
-  expected_n_states = 8*n_grid_cells*(2**nb_dirts)
+  expected_n_states = 4*n_grid_cells*(2**nb_dirts)+4*2**nb_dirts
   return expected_n_states
