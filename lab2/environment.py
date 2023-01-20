@@ -47,6 +47,8 @@ class State:
   def __eq__(self, other):
     # TODO: modify as needed
     # are the attributes of this state the same as the attributes of the other state?
+    
+    # should be able to do both of the checks below
     #return self.turned_on == other.turned_on and self.position == other.position and self.dirts_left == other.dirts_left and self.orientation == other.orientation
     return hash(self) == hash(other) 
 
@@ -123,13 +125,13 @@ class Environment:
   def get_cost(self, state, action):
     # TODO: return correct cost of each action
     if action == "TURN_OFF":
-      D = len(self.dirts)
+      D = len(state.dirts_left)
       if state.position == self.home:
         return 1 + 50*D
       else:
         return 100 + 50*D
     if action == "SUCK":
-      if state.position not in self.dirts:
+      if state.position not in state.dirts_left:
         return 5
       else:
         return 1
