@@ -149,4 +149,5 @@ def expected_number_of_states(width, height, nb_dirts):
   # TODO: return a reasonable upper bound on number of possible states
   n_grid_cells = width * height
   expected_n_states = 4*n_grid_cells*(2**nb_dirts)+4*2**nb_dirts
+  #expected_n_states = (n_grid_cells+1)*(2**(nb_dirts+2)) # shorter version
   return expected_n_states
