@@ -1,4 +1,5 @@
 import collections
+import heapq
 
 ######################
 
@@ -75,7 +76,10 @@ class SearchAlgorithm:
 #  - state: the state belonging to this node
 #  - action: the action that was executed to get to this node (or None in case of the root node)
 
-Node = collections.namedtuple('Node',['value', 'parent', 'state', 'action'])
+# 'value' er f value, f(n) = g(n) + h(n)
+
+Node = collections.namedtuple('Node',['value', 'parent', 'state', 'action','path_cost'])
+
 
 ######################
 
@@ -93,7 +97,30 @@ class AStarSearch(SearchAlgorithm):
 		self.max_frontier_size = 0
 		self.goal_node = None
 
-		current_node = Node(self.heuristics(env.get_current_state()), None, env.get_current_state(), None)
+		current_node = Node(self.heuristics(env.get_current_state()), None, env.get_current_state(), None, 0)
+
+		open_heap = []
+		open_map = {current_node.state: current_node}
+		closed_map ={}
+
+		heapq.heappush(open_heap, current_node)
+
+		while open_heap:
+			pop_node = heapq.heappop(open_heap)
+			# if the pop_node is the goal state, then return
+			if env.is_goal_state(pop_node.state):
+				self.goal_node = pop_node
+				return self.goal_node
+			for child in self.EXPAND(env, pop_node):
+				if child.state in closed_map:
+					continue
+				if child.state not in open_map:
+					heapq.heappush(open_heap, child)
+					open_map[child.state] = child
+				elif child.value < open_map[child.state].value:
+					open_map[child.state] = child
+			
+			
 
 		# TODO implement the search here
 		# Update nb_node_expansions and max_frontier_size while doing the search:
@@ -102,7 +129,13 @@ class AStarSearch(SearchAlgorithm):
 		# Once a goal node has been found, set the goal_node variable to it, this should take care of get_plan() and get_plan_cost() below,
 		# as long as the node contains the right information.
 
-		return
+	def EXPAND(self, problem, node):
+		s = node.state
+		for action in problem.get_legal_actions(node.state):
+			s_prime =  problem.get_next_state(s.state, action)
+			cost = node.path_cost + problem.get_cost(s, action)
+			f_n = cost + self.heuristics(s_prime) # f(n) = g(n) + h(n)
+			yield Node(f_n, node, s_prime, action, cost)
 
 	def get_plan(self):
 		if not self.goal_node:
