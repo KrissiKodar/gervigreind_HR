@@ -41,6 +41,32 @@ class SimpleHeuristics(Heuristics):
 
 ######################
 
+# euclidean distance heuristic
+
+class EuclideanHeuristics(Heuristics):
+    
+    def eval(self, s):
+        h = 0
+        # if there is dirt: max of { euclidean distance to dirt + euclidean distance from dirt to home }
+        # else euclidean distance to home
+        if len(s.dirts) == 0:
+            h = self.euclidean_distance(s.position, self.env.home)
+        else:
+            for d in s.dirts:
+                steps = self.euclidean_distance(s.position, d) + self.euclidean_distance(d, self.env.home)
+                if (steps > h):
+                    h = steps
+            h += len(s.dirts)
+        if s.turned_on:
+            h += 1
+        return h
+    
+    def euclidean_distance(self, a, b):
+        return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+
+
+######################
+
 class SearchAlgorithm:
 	heuristics = None
 
@@ -91,36 +117,54 @@ class AStarSearch(SearchAlgorithm):
 	def __init__(self, heuristic):
 		super().__init__(heuristic)
 
+	def EXPAND(self, problem, node, heuristic_function):
+			s = node.state
+			for action in problem.get_legal_actions(s):
+				s_next =  problem.get_next_state(s, action)
+				cost = node.path_cost + problem.get_cost(s, action)
+				f_n = cost + heuristic_function.eval(s_next) # f(n) = g(n) + h(n)
+				yield Node(f_n, node, s_next, action, cost)
+
 	def do_search(self, env):
 		self.heuristics.init(env)
 		self.nb_node_expansions = 0
 		self.max_frontier_size = 0
 		self.goal_node = None
-
-		current_node = Node(self.heuristics(env.get_current_state()), None, env.get_current_state(), None, 0)
-
+		
+		current_node = Node(self.heuristics.eval(env.get_current_state()), None, env.get_current_state(), None, 0)
+		############################################
+		
+		
 		open_heap = []
 		open_map = {current_node.state: current_node}
 		closed_map ={}
-
+		
 		heapq.heappush(open_heap, current_node)
-
 		while open_heap:
 			pop_node = heapq.heappop(open_heap)
-			# if the pop_node is the goal state, then return
+			# if the pop_node is the goal state, then break
 			if env.is_goal_state(pop_node.state):
 				self.goal_node = pop_node
-				return self.goal_node
-			for child in self.EXPAND(env, pop_node):
+				break
+
+			for child in self.EXPAND(env, pop_node, self.heuristics):
 				if child.state in closed_map:
 					continue
-				if child.state not in open_map:
-					heapq.heappush(open_heap, child)
-					open_map[child.state] = child
-				elif child.value < open_map[child.state].value:
-					open_map[child.state] = child
+				if child.state not in open_map or child.value < open_map[child.state].value:
+					heapq.heappush(open_heap, child) # priority queue of nodes
+					open_map[child.state] = child    # add child to open_map (reached)
+			# remove expanded node from open_map
+			del open_map[pop_node.state]
+			# add expanded node to closed_map
+			closed_map[pop_node.state] = pop_node
+			self.nb_node_expansions += 1
+
+			#print("nb_node_expansions: ", self.nb_node_expansions)
+
+			if len(open_heap) > self.max_frontier_size: 
+				self.max_frontier_size = len(open_heap)
 			
-			
+		
 
 		# TODO implement the search here
 		# Update nb_node_expansions and max_frontier_size while doing the search:
@@ -129,14 +173,7 @@ class AStarSearch(SearchAlgorithm):
 		# Once a goal node has been found, set the goal_node variable to it, this should take care of get_plan() and get_plan_cost() below,
 		# as long as the node contains the right information.
 
-	def EXPAND(self, problem, node):
-		s = node.state
-		for action in problem.get_legal_actions(node.state):
-			s_prime =  problem.get_next_state(s.state, action)
-			cost = node.path_cost + problem.get_cost(s, action)
-			f_n = cost + self.heuristics(s_prime) # f(n) = g(n) + h(n)
-			yield Node(f_n, node, s_prime, action, cost)
-
+	
 	def get_plan(self):
 		if not self.goal_node:
 			return None

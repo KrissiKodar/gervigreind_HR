@@ -16,19 +16,19 @@ class Agent(object):
   # this method is called on the start of the new environment
   # override it to initialise the agent
   def start(self, percepts):
-    print("start called")
+    #print("start called")
     return
 
   # this method is called on each time step of the environment
   # it needs to return the action the agent wants to execute as as string
   def next_action(self, percepts):
-    print("next_action called")
+    #print("next_action called")
     return "NOOP"
 
   # this method is called when the environment has reached a terminal state
   # override it to reset the agent
   def cleanup(self, percepts):
-    print("cleanup called")
+    #print("cleanup called")
     return
 
 #############
@@ -41,10 +41,10 @@ class Agent(object):
 class RandomAgent(Agent):
 
   def next_action(self, percepts):
-    print("perceiving: " + str(percepts))
+    #print("perceiving: " + str(percepts))
     actions = ["TURN_ON", "TURN_OFF", "TURN_RIGHT", "TURN_LEFT", "GO", "SUCK"]
     action = random.choice(actions)
-    print("selected action: " + action)
+    #print("selected action: " + action)
     return action
 
 #############
@@ -60,11 +60,11 @@ class VacuumCleanerAgent(Agent):
   def start(self, percepts):
     self.env = Environment(percepts)
     start_time = time.process_time()
-
+    
     # do the planning and remember the plan
     self.search_algorithm.do_search(self.env)
     self.plan = self.search_algorithm.get_plan()
-
+    
     end_time = time.process_time()
 
     print("planning took %.2fs" % (end_time-start_time))
@@ -83,6 +83,6 @@ class VacuumCleanerAgent(Agent):
   def next_action(self, percepts):
     # execute actions from the plan one after the other
     a = self.plan.pop(0)
-    print("executing " + a)
+    #print("executing " + a)
     return a
 

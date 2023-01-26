@@ -40,20 +40,20 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
     self.send_header('Content-type', 'text/acl')
     self.end_headers()
     self.wfile.write(message.encode())
-    print("sending: " + str(code) + " - " + message)
+    #print("sending: " + str(code) + " - " + message)
 
   def do_GET(self):
-  	self.respond(400, "Only POST requests are supported!")
+    self.respond(400, "Only POST requests are supported!")
     
   def do_PUT(self):
-  	self.respond(400, "Only POST requests are supported!")
+    self.respond(400, "Only POST requests are supported!")
 
   def do_POST(self):
     # Reads post request body
     content_len = int(self.headers['Content-Length'])
     msg = self.rfile.read(content_len).decode()
-    print("----------------")
-    print("received: " + msg)
+    #print("----------------")
+    #print("received: " + msg)
     try:
       cmd = self.get_command(msg)
       if cmd == "START":
@@ -97,7 +97,7 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
       match = re.search(r'\(SIZE\s+([0-9]+)\s+([0-9]+)\s*\)', msg)
       if match:
         result.append(match.group(0))
-      return result;
+      return result
 
   def command_start(self, msg):
     percepts = self.get_initial_state(msg)
@@ -116,7 +116,13 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
 def main():
   # TODO: use your own agent here
   search = AStarSearch(SimpleHeuristics())
+  
+  # my heuristics here below
+  # might add more heuristics later
+  #search = AStarSearch(EuclideanHeuristics())
+  
   agent = VacuumCleanerAgent(search)
+  
 
   # read command line argument(s)
   port = 4001
