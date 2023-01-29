@@ -11,6 +11,7 @@ import re
 import sys
 from agent import *
 from search import *
+from my_agent import *
 
 #########
 
@@ -136,7 +137,8 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
 
 def main():
     # TODO: use your own agent here
-    agent = RandomAgent()
+    #agent = RandomAgent()
+    agent = RandomLegalAgent()
 
     # read command line argument(s)
     port = 4001
