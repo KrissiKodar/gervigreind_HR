@@ -9,6 +9,7 @@ class State:
 		
 		self.white_turn = True
 		self.width = width
+		self.height = height
 		
 	def __str__(self) -> str:
 		dash_count = self.width*4 - 3

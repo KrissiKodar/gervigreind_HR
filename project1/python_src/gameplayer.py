@@ -137,8 +137,9 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
 
 def main():
     # TODO: use your own agent here
+    search = MiniMax(SimpleHeuristics())
     #agent = RandomAgent()
-    agent = RandomLegalAgent()
+    agent = RandomLegalAgent(search)
 
     # read command line argument(s)
     port = 4001

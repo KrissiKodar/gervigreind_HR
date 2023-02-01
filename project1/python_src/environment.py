@@ -19,8 +19,6 @@ class Environment:
         else:
             return y >= max_height_black
         
-        
-    
     def get_moves(self, state, move, y, x):
         opponent = BLACK if state.white_turn else WHITE
         one_step = 1 if state.white_turn else -1
