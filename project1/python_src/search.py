@@ -68,8 +68,37 @@ class MiniMax(SearchAlgorithm):
     def EXPAND(self, problem, node, heuristic_function):
             return
 
-    def do_search(self, env):
+    def init_heuristic(self, env):
         self.heuristics.init(env)
+        return
+    
+    def minimax_search(self, game, state, depth):
+        #player = state.white_turn
+        value, move = self.max_value(game, state, depth)
+        return move
+
+    def max_value(self, game, state, depth):
+        if game.is_terminal(state):
+            return self.get_eval(state), None
+        v, move = float('-inf'), float('-inf')
+        for a in game.get_legal_moves(state):
+            v2, a2 = self.min_value(game, game.move(state, a))
+            if v2 > v:
+                v, move = v2, a
+        return v, move
+    
+    def min_value(self, game, state, depth):
+        if game.is_terminal(state):
+            return self.get_eval(state), None
+        v, move = float('+inf'), float('+inf')
+        for a in game.get_legal_moves(state):
+            v2, a2 = self.max_value(game, game.move(state, a))
+            if v2 < v:
+                v, move = v2, a
+        return v, move
+
+    def do_search(self, env):
+        self.depth_counter = 0
         return
     
     

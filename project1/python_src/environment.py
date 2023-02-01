@@ -85,12 +85,36 @@ class Environment:
         
         state.white_turn = not state.white_turn
 
+    def is_terminal(self, state):
+        leg_moves = self.get_legal_moves(state)
+        if state.white_turn:
+            for move in leg_moves:
+                if move[3] == self.height - 1:
+                    return True
+        elif not state.white_turn:
+                for move in leg_moves:
+                    if move[3] == 0:
+                        return True
+        return len(leg_moves) == 0
+
 
 if __name__ == "__main__":
     env = Environment(5, 5)
     print(env.current_state)
-    env.move(env.current_state, (0, 0, 1, 2))
+    env.move(env.current_state, (0, 0, 0, 2))
     print()
     print(env.current_state)
     print(env.get_legal_moves(env.current_state))
+    print("is terminal: ", env.is_terminal(env.current_state))
+    print()
+    env.move(env.current_state, (0, 4, 1, 2))
+    print(env.current_state)
+    print(env.get_legal_moves(env.current_state))
+    print("is terminal: ", env.is_terminal(env.current_state))
+    print()
+    env.move(env.current_state, (0, 2, 0, 4))
+    print(env.current_state)
+    print()
+    print(env.get_legal_moves(env.current_state))
+    print("is terminal: ", env.is_terminal(env.current_state))
 

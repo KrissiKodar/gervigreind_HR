@@ -32,7 +32,7 @@ class MyAgent(Agent):
         # TODO: add your own initialization code here
         self.env = Environment(width, height)
         
-        self.search_algorithm.do_search(self.env) # initialize the search algorithm
+        self.search_algorithm.init_heuristic(self.env) # initialize the search algorithm
 
     def next_action(self, last_action):
         if last_action:
@@ -55,8 +55,8 @@ class MyAgent(Agent):
         if self.my_turn:
             # TODO: 2. run alpha-beta search to determine the best move
             
-            x1, y1, x2, y2 = self.get_best_move()
-            
+            #x1, y1, x2, y2 = self.get_best_move()
+            x1, y1, x2, y2 = self.do_search()
             return "(move " + " ".join(map(str, [x1, y1, x2, y2])) + ")"
         else:
             return "noop"
