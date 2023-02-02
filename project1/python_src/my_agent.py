@@ -3,7 +3,7 @@ from environment import Environment
 import random
 from search import *
 
-
+import time
 # my main agent class
 
 class MyAgent(Agent):
@@ -33,7 +33,9 @@ class MyAgent(Agent):
         self.env = Environment(width, height)
         
         self.search_algorithm.init_heuristic(self.env) # initialize the search algorithm
-
+        
+        self.depth = 4 # set the depth of the search algorithm
+ 
     def next_action(self, last_action):
         if last_action:
             if self.my_turn and self.role == 'white' or not self.my_turn and self.role != 'white':
@@ -44,9 +46,9 @@ class MyAgent(Agent):
             # TODO: 1. update your internal world model according to the action that was just executed
             last_action = (x - 1 for x in last_action)
             self.env.move(self.env.current_state, last_action)
-            print()
-            print(self.env.current_state)
-            print()
+            #print()
+            #print(self.env.current_state)
+            #print()
         else:
             print("first move!")
 
@@ -56,8 +58,17 @@ class MyAgent(Agent):
             # TODO: 2. run alpha-beta search to determine the best move
             
             #x1, y1, x2, y2 = self.get_best_move()
-            x1, y1, x2, y2 = self.do_search()
-            return "(move " + " ".join(map(str, [x1, y1, x2, y2])) + ")"
+            print()
+            print(self.env.current_state)
+            print()
+            t_start = time.time()
+            ultra_move = self.search_algorithm.do_search(self.env, self.role, self.depth)
+            t_end = time.time()
+            print("Move calculation time: ", t_end - t_start)
+            print("ultimate move: ", ultra_move)
+            print("moves: ", self.env.get_legal_moves(self.env.current_state))
+            x1, y1, x2, y2 = ultra_move[0], ultra_move[1], ultra_move[2], ultra_move[3]
+            return "(move " + " ".join(map(str, [x1+1, y1+1, x2+1, y2+1])) + ")"
         else:
             return "noop"
 
