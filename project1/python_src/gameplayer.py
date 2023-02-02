@@ -139,8 +139,9 @@ def main():
     # TODO: use your own agent here
     
     #search = MiniMax(SimpleHeuristics())
-    #search = AlphaBeta(SimpleHeuristics())
-    search = AlphaBeta_iterative_deepening_new(SimpleHeuristics())
+    search = AlphaBeta(SimpleHeuristics())
+    #search = AlphaBeta_iterative_deepening(SimpleHeuristics())
+    #search = AlphaBeta_iterative_deepening_new(SimpleHeuristics())
     
     #agent = RandomAgent()
     #agent = RandomLegalAgent(search)

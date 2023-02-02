@@ -34,7 +34,7 @@ class MyAgent(Agent):
         
         self.search_algorithm.init_heuristic(self.env) # initialize the search algorithm
         
-        self.depth = 4 # set the depth of the search algorithm
+        self.depth = 5 # set the depth of the search algorithm
  
     def next_action(self, last_action):
         if last_action:
@@ -62,11 +62,14 @@ class MyAgent(Agent):
             print(self.env.current_state)
             print()
             t_start = time.time()
-            ultra_move = self.search_algorithm.do_search(self.env, self.role, self.depth)
+            ultra_move, n_expansions = self.search_algorithm.do_search(self.env, self.role, self.depth)
             t_end = time.time()
-            print("Move calculation time: ", t_end - t_start)
+            time_for_move = t_end - t_start
+            print("Move calculation time_for_move: ", time_for_move)
             print("ultimate move: ", ultra_move)
             print("moves: ", self.env.get_legal_moves(self.env.current_state))
+            print("n_expansions: ", n_expansions)
+            if time_for_move != 0: print("n_expansion_per_second: ", n_expansions/(time_for_move))
             x1, y1, x2, y2 = ultra_move[0], ultra_move[1], ultra_move[2], ultra_move[3]
             return "(move " + " ".join(map(str, [x1+1, y1+1, x2+1, y2+1])) + ")"
         else:

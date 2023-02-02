@@ -26,26 +26,26 @@ class SimpleHeuristics(Heuristics):
         if player == "white":
             # +100 if winning
             if WHITE in state.board[height]:
-                k += 100
+                return 100
             if BLACK in state.board[0]:
-                k -= 100
+                return -100
             len_moves = len(legal_moves)
             k += len_moves
             if len_moves == 0:
-                k -= 100
+                return 0
             # count "WHITE" and "BLACK" in state.board
             for i in state.board:
                 k += i.count(WHITE)
                 k -= i.count(BLACK)
         else:
             if WHITE in state.board[height]:
-                k -= 100
+                return -100
             if BLACK in state.board[0]:
-                k += 100
+                return 100
             len_moves = len(legal_moves)
             k += len_moves
             if len_moves == 0:
-                k -= 100
+                return 0
             # count "WHITE" and "BLACK" in state.board
             for i in state.board:
                 k += i.count(BLACK)
@@ -70,7 +70,7 @@ class SearchAlgorithm:
         raise NotImplementedError()
 
     # returns the number of node expansions of the last search that was executed
-    def get_nb_node_expansions(self):
+    def get_nb_node_expansionss(self):
         raise NotImplementedError()
 
     # returns the maximal size of the frontier of the last search that was executed
@@ -103,6 +103,7 @@ class MiniMax(SearchAlgorithm):
         if game.is_terminal(state) or depth == 0:
             return self.get_eval(state, self.player), None
         v, move = float('-inf'), float('-inf')
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1)
@@ -115,6 +116,7 @@ class MiniMax(SearchAlgorithm):
         if game.is_terminal(state) or depth == 0:
             return self.get_eval(state, self.player), None
         v, move = float('+inf'), float('+inf')
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1)
@@ -125,12 +127,13 @@ class MiniMax(SearchAlgorithm):
 
     def do_search(self, env, player, depth):
         self.player = player
-        return self.minimax_search(env, env.current_state, depth)
+        self.n_expansions = 0
+        return self.minimax_search(env, env.current_state, depth), self.n_expansions
     
     def get_plan(self):
         return
 
-    def get_nb_node_expansions(self):
+    def get_nb_node_expansionss(self):
         return
 
     def get_max_frontier_size(self):
@@ -164,6 +167,7 @@ class AlphaBeta(SearchAlgorithm):
             return self.get_eval(state, self.player), None
         v = float('-inf')
         move = None
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
@@ -180,6 +184,7 @@ class AlphaBeta(SearchAlgorithm):
             return self.get_eval(state, self.player), None
         v = float('+inf')
         move = None
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
@@ -193,12 +198,13 @@ class AlphaBeta(SearchAlgorithm):
 
     def do_search(self, env, player, depth):
         self.player = player
-        return self.alphabeta_search(env, env.current_state, depth)
+        self.n_expansions = 0
+        return self.alphabeta_search(env, env.current_state, depth), self.n_expansions
     
     def get_plan(self):
         return
 
-    def get_nb_node_expansions(self):
+    def get_nb_node_expansionss(self):
         return
 
     def get_max_frontier_size(self):
@@ -228,6 +234,8 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
             value, move = self.max_value(game, state, i, float('-inf'), float('+inf'), move_order, 0)
             print("move: ", move)
             print("VALUE: ", value)
+            if value == 100:
+                return move
         return move
 
     def max_value(self, game, state, depth, alpha, beta, move_order, move_order_index):
@@ -240,6 +248,7 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         print("move_order[", move_order_index, "]: ", move_order[move_order_index])
         print("depth: ", depth)
         print()
+        self.n_expansions += 1
         for a in move_order[move_order_index]:
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta, move_order, move_order_index+1)
@@ -265,6 +274,7 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         print("move_order[", move_order_index, "]: ", move_order[move_order_index])
         print("depth: ", depth)
         print()
+        self.n_expansions += 1
         for a in move_order[move_order_index]:
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta, move_order, move_order_index+1)
@@ -281,13 +291,14 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
 
     def do_search(self, env, player, depth):
         self.player = player
-        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth)
+        self.n_expansions = 0
+        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth), self.n_expansions
     
     
     def get_plan(self):
         return
 
-    def get_nb_node_expansions(self):
+    def get_nb_node_expansionss(self):
         return
 
     def get_max_frontier_size(self):
@@ -299,7 +310,6 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
     def get_eval(self, state, player):
         return self.heuristics.eval(state, player)
 
-
 class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def __init__(self, heuristic):
@@ -310,20 +320,25 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def init_heuristic(self, env):
         self.heuristics.init(env)
+        # self.transposition_table = {}
         return
+    
+    
     
     def alphabeta_search_iterative_deepening(self, game, state, depth):
         for i in range(1, depth+1):
             value, move = self.max_value(game, state, i, float('-inf'), float('+inf'))
             print("move: ", move)
             print("VALUE: ", value)
+            if value == 100:
+                return move
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
         if game.is_terminal(state) or depth == 0:
             return self.get_eval(state, self.player), None
         v = float('-inf')
-
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
@@ -339,6 +354,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         if game.is_terminal(state) or depth == 0:
             return self.get_eval(state, self.player), None
         v = float('+inf')
+        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
@@ -352,13 +368,14 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def do_search(self, env, player, depth):
         self.player = player
-        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth)
+        self.n_expansions = 0
+        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth), self.n_expansions
     
     
     def get_plan(self):
         return
 
-    def get_nb_node_expansions(self):
+    def get_nb_node_expansionss(self):
         return
 
     def get_max_frontier_size(self):
