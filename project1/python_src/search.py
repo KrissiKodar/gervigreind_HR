@@ -226,7 +226,8 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         move_order = [[] for i in range(depth)]
         for i in range(1, depth+1):
             value, move = self.max_value(game, state, i, float('-inf'), float('+inf'), move_order, 0)
-        print("VALUE: ", value)
+            print("move: ", move)
+            print("VALUE: ", value)
         return move
 
     def max_value(self, game, state, depth, alpha, beta, move_order, move_order_index):
@@ -297,6 +298,78 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
 
     def get_eval(self, state, player):
         return self.heuristics.eval(state, player)
+
+
+class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
+
+    def __init__(self, heuristic):
+        super().__init__(heuristic)
+
+    def EXPAND(self, problem, node, heuristic_function):
+            return
+
+    def init_heuristic(self, env):
+        self.heuristics.init(env)
+        return
+    
+    def alphabeta_search_iterative_deepening(self, game, state, depth):
+        for i in range(1, depth+1):
+            value, move = self.max_value(game, state, i, float('-inf'), float('+inf'))
+            print("move: ", move)
+            print("VALUE: ", value)
+        return move
+
+    def max_value(self, game, state, depth, alpha, beta):
+        if game.is_terminal(state) or depth == 0:
+            return self.get_eval(state, self.player), None
+        v = float('-inf')
+
+        for a in game.get_legal_moves(state):
+            game.move(state, a)
+            v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
+            if v2 > v:
+                v, move = v2, a
+                alpha = max(alpha, v)           
+            game.undo_move(game.current_state, a)
+            if v >= beta:
+                return v, move
+        return v, move
+    
+    def min_value(self, game, state, depth, alpha, beta):
+        if game.is_terminal(state) or depth == 0:
+            return self.get_eval(state, self.player), None
+        v = float('+inf')
+        for a in game.get_legal_moves(state):
+            game.move(state, a)
+            v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
+            if v2 < v:
+                v, move = v2, a
+                beta = min(beta, v)	
+            game.undo_move(game.current_state, a)
+            if v <= alpha:
+                return v, move
+        return v, move
+
+    def do_search(self, env, player, depth):
+        self.player = player
+        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth)
+    
+    
+    def get_plan(self):
+        return
+
+    def get_nb_node_expansions(self):
+        return
+
+    def get_max_frontier_size(self):
+        return
+
+    def get_plan_cost(self):
+        return
+
+    def get_eval(self, state, player):
+        return self.heuristics.eval(state, player)
+
 
 
 if __name__ == "__main__":
