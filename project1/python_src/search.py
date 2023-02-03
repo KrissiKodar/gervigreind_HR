@@ -2,9 +2,9 @@ import collections
 import heapq
 import time
 import copy
+import numpy as np
 
-
-WHITE, BLACK, EMPTY = "W", "B", " "
+WHITE, BLACK, EMPTY = 1, 2, 0
 
 class Evaluations:
 
@@ -27,6 +27,11 @@ class SimpleEvaluation(Evaluations):
         #legal_moves = self.env.get_legal_moves(state)
         height = self.env.height - 1
         
+        black_rows, _ = np.where(state.board == BLACK)
+        black_distance = np.min(black_rows)
+        white_rows, _ = np.where(state.board == WHITE)
+        white_distance = height - np.max(white_rows)
+        
         if player == "white":
             if winner == WHITE:
                 return 100
@@ -34,15 +39,8 @@ class SimpleEvaluation(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
-            
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k += height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k -= height - idx
-                    break
+            k += white_distance - black_distance
+
         else:
             if winner == WHITE:
                 return -100
@@ -50,14 +48,7 @@ class SimpleEvaluation(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k -= height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k += height - idx
-                    break
+            k += black_distance - white_distance
         return k
 
 # same as SimpleEvaluation but counts white and black pieces
@@ -68,6 +59,14 @@ class Evaluation_v1(Evaluations):
         #legal_moves = self.env.get_legal_moves(state)
         height = self.env.height - 1
         
+        black_rows, _ = np.where(state.board == BLACK)
+        black_distance = np.min(black_rows)
+        white_rows, _ = np.where(state.board == WHITE)
+        white_distance = height - np.max(white_rows)
+        
+        num_black = np.count_nonzero(state.board == BLACK)
+        num_white = np.count_nonzero(state.board == WHITE)
+        
         if player == "white":
             if winner == WHITE:
                 return 100
@@ -75,19 +74,8 @@ class Evaluation_v1(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
-            
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k += height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k -= height - idx
-                    break
-            # count "WHITE" and "BLACK" in state.board
-            for i in state.board:
-                k += i.count(WHITE)
-                k -= i.count(BLACK)
+            k += white_distance - black_distance
+            k += num_white - num_black
         else:
             if winner == WHITE:
                 return -100
@@ -95,18 +83,8 @@ class Evaluation_v1(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k -= height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k += height - idx
-                    break
-            #count "WHITE" and "BLACK" in state.board
-            for i in state.board:
-                k += i.count(BLACK)
-                k -= i.count(WHITE)
+            k += black_distance - white_distance
+            k += num_black - num_white
         return k
 
 
@@ -121,6 +99,14 @@ class Evaluation_v2(Evaluations):
         height = self.env.height - 1
         k += n_friendly_attacks
         #k -= n_opponent_attacks
+        
+        black_rows, _ = np.where(state.board == BLACK)
+        black_distance = np.min(black_rows)
+        white_rows, _ = np.where(state.board == WHITE)
+        white_distance = height - np.max(white_rows)
+        
+        num_black = np.count_nonzero(state.board == BLACK)
+        num_white = np.count_nonzero(state.board == WHITE)
 
         if player == "white":
             if winner == WHITE:
@@ -129,18 +115,8 @@ class Evaluation_v2(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k += height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k -= height - idx
-                    break
-            # count "WHITE" and "BLACK" in state.board
-            for i in state.board:
-                k += i.count(WHITE)
-                k -= i.count(BLACK)
+            k += white_distance - black_distance
+            k += num_white - num_black
         else:
             if winner == WHITE:
                 return -100
@@ -148,18 +124,8 @@ class Evaluation_v2(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
-            for idx, i in enumerate(reversed(state.board)):
-                if WHITE in i:
-                    k -= height - idx
-                    break    
-            for idx, i in enumerate(state.board):
-                if BLACK in i:
-                    k += height - idx
-                    break
-            #count "WHITE" and "BLACK" in state.board
-            for i in state.board:
-                k += i.count(BLACK)
-                k -= i.count(WHITE)
+            k += black_distance - white_distance
+            k += num_black - num_white
         return k
 
 

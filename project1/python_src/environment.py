@@ -5,8 +5,9 @@ from enum import IntEnum
 from state import State
 
 import time
+import numpy as np
 
-WHITE, BLACK, EMPTY = "W", "B", " "
+WHITE, BLACK, EMPTY = 1, 2, 0
 
 
 class Environment:
@@ -21,45 +22,41 @@ class Environment:
         else:
             return y >= max_height_black
         
-    def get_moves(self, state, move, y, x):
+    def get_moves(self, state, y, x):
         opponent = BLACK if state.white_turn else WHITE
         one_step = 1 if state.white_turn else -1
         two_steps = 2 if state.white_turn else -2
-        
+
         # two steps forward and one step left/right
-        if self.can_move_n_steps_forward(state, y, 2, self.height - 3):
-            if x > 0 and state.board[y + two_steps][x - 1] == EMPTY:
-                move.append((x, y, x - 1, y + two_steps))
-            if x < self.width - 1 and state.board[y + two_steps][x + 1] == EMPTY:
-                move.append((x, y, x + 1, y + two_steps))
+        if (state.white_turn and y <= self.height - 3) or (not state.white_turn and y >= 2):
+            if x > 0 and state.board[y + two_steps, x - 1] == EMPTY:
+                yield (x, y, x - 1, y + two_steps)
+            if x < self.width - 1 and state.board[y + two_steps, x + 1] == EMPTY:
+                yield (x, y, x + 1, y + two_steps)
             
         # one step forward and two step left/right
-        if self.can_move_n_steps_forward(state, y, 1, self.height - 2):
-            if x > 1 and state.board[y + one_step][x - 2] == EMPTY:
-                move.append((x, y, x - 2, y + one_step))
-            if x < self.width - 2 and state.board[y + one_step][x + 2] == EMPTY:
-                move.append((x, y, x + 2, y + one_step))	
+        if (state.white_turn and y <= self.height - 2) or (not state.white_turn and y >= 1):
+            if x > 1 and state.board[y + one_step, x - 2] == EMPTY:
+                yield (x, y, x - 2, y + one_step)
+            if x < self.width - 2 and state.board[y + one_step, x + 2] == EMPTY:
+                yield (x, y, x + 2, y + one_step)	
             # kill opponent, only one step diagonal forward
-            if x > 0 and state.board[y + one_step][x - 1] == opponent:
-                move.append((x, y, x - 1, y + one_step))
-            if x < self.width - 1 and state.board[y + one_step][x + 1] == opponent:
-                move.append((x, y, x + 1, y + one_step))
+            if x > 0 and state.board[y + one_step, x - 1] == opponent:
+                yield (x, y, x - 1, y + one_step)
+            if x < self.width - 1 and state.board[y + one_step, x + 1] == opponent:
+                yield (x, y, x + 1, y + one_step)
 
-    
-        
+############################
     def get_legal_moves(self, state):
-        moves = []
         friendly = WHITE if state.white_turn else BLACK
-        #t_start = time.time()
-        for y in range(self.height):
-            for x in range(self.width):
-                if state.board[y][x] == friendly:
-                    self.get_moves(state, moves, y, x)
-        return moves
+        friendly_indices = np.where(state.board == friendly)
+        for i in list(zip(friendly_indices[0], friendly_indices[1])):
+            yield from self.get_moves(state, *i)
+
 
     def move(self, state, move):
         x1, y1, x2, y2 = move
-        state.board[y2][x2], state.board[y1][x1] = state.board[y1][x1], EMPTY
+        state.board[y2,x2], state.board[y1,x1] = state.board[y1,x1], EMPTY
         state.white_turn = not state.white_turn
 
     def was_diagonal_move(self, move):
@@ -76,33 +73,34 @@ class Environment:
         
     def undo_move(self, state, move):
         x1, y1, x2, y2 = move
-
         if self.was_diagonal_move(move):
             if state.white_turn:
-                state.board[y1][x1], state.board[y2][x2] = state.board[y2][x2], WHITE
+                state.board[y1,x1], state.board[y2,x2] = state.board[y2,x2], WHITE
             else:
-                state.board[y1][x1], state.board[y2][x2] = state.board[y2][x2], BLACK
+                state.board[y1,x1], state.board[y2,x2] = state.board[y2,x2], BLACK
         else: # not diagonal move
-            state.board[y1][x1], state.board[y2][x2] = state.board[y2][x2], state.board[y1][x1]
-        
+            state.board[y1,x1], state.board[y2,x2] = state.board[y2,x2], state.board[y1,x1] 
         state.white_turn = not state.white_turn
 
     def is_terminal(self, state):
-        if WHITE in state.board[self.height-1]:
+        if any(state.board[-1,:] == WHITE):
             return True, WHITE
-        if BLACK in state.board[0]:
+        if any(state.board[0,:] == BLACK):
             return True, BLACK
-        if len(self.get_legal_moves(state)) == 0:
-            return True, 0
         return False, None
+        #try:
+        #    next(self.get_legal_moves(state))
+        #    return False, None
+        #except StopIteration:
+        #    return True, 0
     
     
     def count_attacks(self, state, opponent, one_step, y, x):
         n = 0
-        if self.can_move_n_steps_forward(state, y, 1, self.height - 2):
-            if x > 0 and state.board[y + one_step][x - 1] == opponent:
+        if (state.white_turn and y <= self.height - 2) or (not state.white_turn and y >= 1):
+            if x > 0 and state.board[y + one_step, x - 1] == opponent:
                 n += 1
-            if x < self.width - 1 and state.board[y + one_step][x + 1] == opponent:
+            if x < self.width - 1 and state.board[y + one_step, x + 1] == opponent:
                 n += 1
         return n
 
@@ -112,14 +110,12 @@ class Environment:
         one_step = 1 if state.white_turn else -1
         n_friendly_attacks = 0
         n_opponent_attacks = 0
-        for y in range(self.height):
-            for x in range(self.width):
-                if state.board[y][x] == friendly:
-                    n_friendly_attacks = self.count_attacks(state, opponent, one_step, y, x)
-                if state.board[y][x] == opponent:
-                    n_opponent_attacks = self.count_attacks(state, friendly, one_step, y, x)
-                    
-
+        friendly_indices = np.where(state.board == friendly)
+        opponent_indices = np.where(state.board == opponent)
+        for i in list(zip(friendly_indices[0], friendly_indices[1])):
+            self.get_moves(state, opponent, one_step, *i)
+        for i in list(zip(opponent_indices[0], opponent_indices[1])):
+            self.get_moves(state, friendly, one_step, *i)
         return n_friendly_attacks, n_opponent_attacks
 
     
