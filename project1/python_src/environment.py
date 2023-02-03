@@ -45,7 +45,7 @@ class Environment:
             if x < self.width - 1 and state.board[y + one_step][x + 1] == opponent:
                 move.append((x, y, x + 1, y + one_step))
 
-
+    
         
     def get_legal_moves(self, state):
         moves = []
@@ -55,12 +55,6 @@ class Environment:
             for x in range(self.width):
                 if state.board[y][x] == friendly:
                     self.get_moves(state, moves, y, x)
-
-        #friendly_pieces = [(y, x) for y in range(self.height) for x in range(self.width) if state.board[y][x] == friendly]
-        #for y, x in friendly_pieces:
-        #    self.get_moves(state, moves, y, x)
-        #t_end = time.time()
-        #print("Time to get legal moves: ", t_end - t_start)
         return moves
 
     def move(self, state, move):
@@ -94,19 +88,41 @@ class Environment:
         state.white_turn = not state.white_turn
 
     def is_terminal(self, state):
-        if state.white_turn:
-            y = self.height - 1
+        if WHITE in state.board[self.height-1]:
+            return True, WHITE
+        if BLACK in state.board[0]:
+            return True, BLACK
+        if len(self.get_legal_moves(state)) == 0:
+            return True, 0
+        return False, None
+    
+    
+    def count_attacks(self, state, opponent, one_step, y, x):
+        n = 0
+        if self.can_move_n_steps_forward(state, y, 1, self.height - 2):
+            if x > 0 and state.board[y + one_step][x - 1] == opponent:
+                n += 1
+            if x < self.width - 1 and state.board[y + one_step][x + 1] == opponent:
+                n += 1
+        return n
+
+    def get_n_attacking_moves(self, state):
+        friendly = WHITE if state.white_turn else BLACK
+        opponent = BLACK if state.white_turn else WHITE
+        one_step = 1 if state.white_turn else -1
+        n_friendly_attacks = 0
+        n_opponent_attacks = 0
+        for y in range(self.height):
             for x in range(self.width):
-                if state.board[y][x] == WHITE:
-                    return True
-        elif not state.white_turn:
-            y = 0
-            for x in range(self.width):
-                if state.board[y][x] == BLACK:
-                    return True
-        elif len(self.get_legal_moves(state)) == 0:
-            return True
-        return False        
+                if state.board[y][x] == friendly:
+                    n_friendly_attacks = self.count_attacks(state, opponent, one_step, y, x)
+                if state.board[y][x] == opponent:
+                    n_opponent_attacks = self.count_attacks(state, friendly, one_step, y, x)
+                    
+
+        return n_friendly_attacks, n_opponent_attacks
+
+    
 
 
 if __name__ == "__main__":

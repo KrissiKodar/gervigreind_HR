@@ -32,9 +32,11 @@ class MyAgent(Agent):
         # TODO: add your own initialization code here
         self.env = Environment(width, height)
         
-        self.search_algorithm.init_heuristic(self.env) # initialize the search algorithm
+        self.search_algorithm.init_evaluation(self.env, self.play_clock) # initialize the search algorithm
         
-        self.depth = 5 # set the depth of the search algorithm
+        self.depth = 12 # set the depth of the search algorithm
+        
+        self.total_time = 0
  
     def next_action(self, last_action):
         if last_action:
@@ -58,20 +60,27 @@ class MyAgent(Agent):
             # TODO: 2. run alpha-beta search to determine the best move
             
             #x1, y1, x2, y2 = self.get_best_move()
+            #print()
+            #print(self.env.current_state)
+            #print()
             print()
-            print(self.env.current_state)
-            print()
-            t_start = time.time()
-            ultra_move, n_expansions = self.search_algorithm.do_search(self.env, self.role, self.depth)
+            t_move_start = time.time()        
+            ultra_move = self.search_algorithm.do_search(self.env, self.role, self.depth)
+            n_expansions = self.search_algorithm.get_nb_state_expansions()
             t_end = time.time()
-            time_for_move = t_end - t_start
-            print("Move calculation time_for_move: ", time_for_move)
+            time_for_move = t_end - t_move_start
+            self.total_time += time_for_move
+            
+            print("Time for move calculation", time_for_move, " s")
+            print("Total time calculating", self.total_time, " s")
             print("ultimate move: ", ultra_move)
-            print("moves: ", self.env.get_legal_moves(self.env.current_state))
+            #print("moves: ", self.env.get_legal_moves(self.env.current_state))
             print("n_expansions: ", n_expansions)
-            if time_for_move != 0: print("n_expansion_per_second: ", n_expansions/(time_for_move))
-            x1, y1, x2, y2 = ultra_move[0], ultra_move[1], ultra_move[2], ultra_move[3]
-            return "(move " + " ".join(map(str, [x1+1, y1+1, x2+1, y2+1])) + ")"
+            if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
+            print()
+            
+            x1, y1, x2, y2 = ultra_move[0]+1, ultra_move[1]+1, ultra_move[2]+1, ultra_move[3]+1
+            return "(move " + " ".join(map(str, [x1, y1, x2, y2])) + ")"
         else:
             return "noop"
 
