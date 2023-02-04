@@ -3,8 +3,11 @@ import heapq
 import time
 import copy
 import numpy as np
+import hashlib
 
 WHITE, BLACK, EMPTY = 1, 2, 0
+
+TIMEOUT_DIFF = 0.01
 
 class Evaluations:
 
@@ -128,7 +131,39 @@ class Evaluation_v2(Evaluations):
             k += num_black - num_white
         return k
 
+# 100 if win
+# -100 if lose
+# 0 if draw
+# distance of all black pieces from other side - distance of all white pieces from other side
+class Evaluation_v3(Evaluations):
+    def eval(self, state, player, winner=None):
+        k = 0
+        #legal_moves = self.env.get_legal_moves(state)
+        height = self.env.height - 1
+        
+        black_rows, _ = np.where(state.board == BLACK)
+        black_distances = np.sum(black_rows)
+        white_rows, _ = np.where(state.board == WHITE)
+        white_distances = np.sum(height - 1*white_rows)
+        
+        if player == "white":
+            if winner == WHITE:
+                return 100
+            elif winner == BLACK:
+                return -100
+            elif winner == 0: #draw
+                return 0
+            k += white_distances - black_distances
 
+        else:
+            if winner == WHITE:
+                return -100
+            elif winner == BLACK:
+                return 100
+            elif winner == 0: #draw
+                return 0
+            k += black_distances - white_distances
+        return k
 
 # TODO: implement more and better evaluation functions
 
@@ -375,11 +410,11 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
 class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def __init__(self, evaluation):
+        self.n_expansions = 0
         super().__init__(evaluation)
 
     def init_evaluation(self, env, play_clock):
         self.evaluations.init(env)
-        self.n_expansions = 0
         self.play_clock = play_clock
         return
     
@@ -405,7 +440,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
-        if time.time() - self.t_start > self.play_clock-0.05:
+        if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
         game_over, winner = game.is_terminal(state)    
@@ -427,7 +462,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
-        if time.time() - self.t_start > self.play_clock-0.05:
+        if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
         game_over, winner = game.is_terminal(state)    
@@ -451,6 +486,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
     def do_search(self, env, player, depth):
         self.player = player
         self.t_start = time.time()
+        self.n_expansions = 0
         return self.alphabeta_search_iterative_deepening(env, env.current_state, depth)
     
     
@@ -458,17 +494,110 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return self.n_expansions
 
 
+class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
+
+    def __init__(self, evaluation):
+        self.n_expansions = 0
+        self.transposition_table = {}
+        super().__init__(evaluation)
+
+    def init_evaluation(self, env, play_clock):
+        self.evaluations.init(env)
+        self.play_clock = play_clock
+        return
+    
+    def alphabeta_search_iterative_deepening(self, game, state, depth):
+        # this copy is only for the TimeoutError
+        # that is, if the time limit is reached, then we dont have to undo all the moves
+        # to get back to the original state
+        game_copy = copy.deepcopy(game)
+        try:
+            for i in range(1, depth+1):
+                t_start_iteration = time.time()
+                value, move = self.max_value(game_copy, game_copy.current_state, i, float('-inf'), float('+inf'))
+                t_end_iteration= time.time()
+                print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
+                print("move: ", move)
+                print("VALUE: ", value)
+                print("transposition table: ", self.transposition_table)
+                if value == 100:
+                    return move
+        except TimeoutError:
+            print("TIMEOUT")
+            print("best move yet: ", move)
+            return move
+        return move
+
+    def max_value(self, game, state, depth, alpha, beta):
+        if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
+            print(time.time() - self.t_start)
+            raise TimeoutError
+        hash_of_incoming_state = hash(str(state))
+        if hash_of_incoming_state in self.transposition_table:
+            # return the value and move from the transposition table
+            print("transposition table hit")
+            return self.transposition_table[hash_of_incoming_state]
+        game_over, winner = game.is_terminal(state)    
+        if game_over:
+            return super().get_eval(state, self.player, winner), None
+        if depth == 0:
+            return super().get_eval(state, self.player, winner), None
+        v = float('-inf')
+        self.n_expansions += 1
+        for a in game.get_legal_moves(state):
+            game.move(state, a)
+            v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
+            if v2 > v:
+                v, move = v2, a
+                alpha = max(alpha, v)           
+            game.undo_move(game.current_state, a)
+            self.transposition_table[hash(str(state))] = (v, move)
+            if v >= beta:
+                return v, move
+        return v, move
+    
+    def min_value(self, game, state, depth, alpha, beta):
+        if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
+            print(time.time() - self.t_start)
+            raise TimeoutError
+        hash_of_incoming_state = hash(str(state))
+        if hash_of_incoming_state in self.transposition_table:
+            print("transposition table hit")
+            return self.transposition_table[hash_of_incoming_state]
+        game_over, winner = game.is_terminal(state)    
+        if game_over:
+            return super().get_eval(state, self.player, winner), None
+        if depth == 0:
+            return super().get_eval(state, self.player, winner), None
+        v = float('+inf')
+        self.n_expansions += 1
+        for a in game.get_legal_moves(state):
+            game.move(state, a)
+            v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
+            if v2 < v:
+                v, move = v2, a
+                beta = min(beta, v)	
+            game.undo_move(game.current_state, a)
+            self.transposition_table[hash(str(state))] = (v, move)
+            if v <= alpha:
+                return v, move
+        return v, move
+
+    def do_search(self, env, player, depth):
+        self.player = player
+        self.t_start = time.time()
+        self.n_expansions = 0
+        return self.alphabeta_search_iterative_deepening(env, env.current_state, depth)
+    
+    
+    def get_nb_state_expansions(self):
+        return self.n_expansions
+
 if __name__ == "__main__":
-    def A(L):
-        L.append(1)
-        B(L)
-        return L
-    def B(L):
-        L.append(5)
-        return L
-    # make bb a list of 5 empty lists
-    bb = [1,2,3,4,5]
-    bb.remove(3)	
-    #bb.append(3)	
-    bb.insert(0, 3)
-    print(bb)
+    import hashlib
+
+    data = "Hello, World!"
+    hash_object = hashlib.sha256(data.encode())
+    print(hash_object)
+    hex_dig = hash_object.hexdigest()
+    print("The hexadecimal representation of the hash is:", hex_dig)

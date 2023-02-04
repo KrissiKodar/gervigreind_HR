@@ -2,6 +2,7 @@ from agent import Agent
 from environment import Environment
 import random
 from search import *
+import numpy as np
 
 import time
 # my main agent class
@@ -34,9 +35,12 @@ class MyAgent(Agent):
         
         self.search_algorithm.init_evaluation(self.env, self.play_clock) # initialize the search algorithm
         
-        self.depth = 12 # set the depth of the search algorithm
+        self.depth = 24 # set the depth of the search algorithm
         
         self.total_time = 0
+        
+        self.state_expansion_list = []
+        self.total_expansions = 0
  
     def next_action(self, last_action):
         if last_action:
@@ -75,7 +79,12 @@ class MyAgent(Agent):
             print("Total time calculating", self.total_time, " s")
             print("ultimate move: ", ultra_move)
             #print("moves: ", self.env.get_legal_moves(self.env.current_state))
-            print("n_expansions: ", n_expansions)
+            self.total_expansions += n_expansions
+            self.state_expansion_list.append(n_expansions)
+            print("state expansion list: ", self.state_expansion_list)
+            print("total state expansions so far: ", self.total_expansions)
+            print("average state expansions per search: ", np.mean(self.state_expansion_list))
+            print("average state expansions per second: ", np.mean(self.state_expansion_list)/time_for_move)
             if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
             print()
             

@@ -26,7 +26,7 @@ class Environment:
         opponent = BLACK if state.white_turn else WHITE
         one_step = 1 if state.white_turn else -1
         two_steps = 2 if state.white_turn else -2
-
+        
         # two steps forward and one step left/right
         if (state.white_turn and y <= self.height - 3) or (not state.white_turn and y >= 2):
             if x > 0 and state.board[y + two_steps, x - 1] == EMPTY:
@@ -50,8 +50,12 @@ class Environment:
     def get_legal_moves(self, state):
         friendly = WHITE if state.white_turn else BLACK
         friendly_indices = np.where(state.board == friendly)
-        for i in list(zip(friendly_indices[0], friendly_indices[1])):
-            yield from self.get_moves(state, *i)
+        if state.white_turn:
+            for i in list(zip(friendly_indices[0], friendly_indices[1]))[::-1]:
+                yield from self.get_moves(state, *i)
+        else:
+            for i in list(zip(friendly_indices[0], friendly_indices[1])):
+                yield from self.get_moves(state, *i)
 
 
     def move(self, state, move):
@@ -126,16 +130,20 @@ if __name__ == "__main__":
         return True
     
     def bla(game, state):
-        foo(game.move(state, (0, 0, 0, 2)))
-        print(state)
-        print(game.get_legal_moves(state))
+        game.move(state, (0, 0, 2, 2))
+        
         print("is terminal: ", game.is_terminal(state))
-        game.undo_move(state, (0, 0, 0, 2))
-        print(state)
-        print(game.get_legal_moves(state))
-        print("is terminal: ", game.is_terminal(state))
+        game.move(state, (4, 4, 3, 2))
         print()
-    env = Environment(3, 5)
+        print(state)
+        for i in game.get_legal_moves(state):
+            print(i)
+        game.move(state, (2, 2, 0, 0))
+        print(state)
+        for i in game.get_legal_moves(state):
+            print(i)
+        print("is terminal: ", game.is_terminal(state))
+    env = Environment(5, 5)
     print(env.get_legal_moves(env.current_state))
     bla(env, env.current_state)
 
