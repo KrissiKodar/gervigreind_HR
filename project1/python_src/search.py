@@ -102,7 +102,7 @@ class Evaluation_v1(Evaluations):
             num_black = np.count_nonzero(state.board == BLACK)
             num_white = np.count_nonzero(state.board == WHITE)
             k += black_distance - white_distance
-            k += 2*(num_black - num_white)
+            k += num_black - num_white
         return k
     
     def __str__(self) -> str:

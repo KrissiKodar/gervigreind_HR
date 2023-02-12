@@ -4,7 +4,7 @@ WHITE, BLACK, EMPTY = 1, 2, 0
 
 class State:  
     def __init__(self, width, height) -> None:
-        self.board = np.zeros((height, width), dtype=np.int8)
+        self.board = np.zeros((height, width), dtype=int)
         self.board[:2,:] = WHITE
         self.board[height-2:,:] = BLACK
         
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     one_step = 1
     two_steps = 2
     width, height = 10,10
-    board = np.zeros((height, width), dtype=np.int8)
+    board = np.zeros((height, width), dtype=np.float64)
     board[:2,:] = WHITE
     board[height-2:,:] = BLACK
     print(board)
