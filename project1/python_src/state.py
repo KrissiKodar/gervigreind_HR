@@ -23,7 +23,7 @@ if __name__ == "__main__":
     WHITE, BLACK, EMPTY = 1, 2, 0
     one_step = 1
     two_steps = 2
-    width, height = 5,5
+    width, height = 10,10
     board = np.zeros((height, width), dtype=np.int8)
     board[:2,:] = WHITE
     board[height-2:,:] = BLACK
@@ -51,9 +51,10 @@ if __name__ == "__main__":
     min_distance = np.max(rows)
     print(4-min_distance)
     num_black = np.count_nonzero(board == BLACK)
+    board[3,1] = WHITE
+    print(board)
     black_rows, _ = np.where(board == BLACK)
-    print(np.sum(black_rows))
     white_rows, _ = np.where(board == WHITE)
-    white_distances = np.sum(height-1 - 1*white_rows)
-    print(white_distances)
-    print(str(board))
+    print(height-1-black_rows)
+    print(white_rows)
+

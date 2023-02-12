@@ -30,15 +30,6 @@ class SimpleEvaluation(Evaluations):
         #legal_moves = self.env.get_legal_moves(state)
         height = self.env.height - 1
         
-        black_rows, _ = np.where(state.board == BLACK)
-        black_distance = np.min(black_rows)
-        white_rows, _ = np.where(state.board == WHITE)
-        try:
-            white_distance = height - np.max(white_rows)
-        except:
-            white_distance = 0
-            
-            
         if player == "white":
             if winner == WHITE:
                 return 100
@@ -46,6 +37,12 @@ class SimpleEvaluation(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
+            
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distance = np.max(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distance = np.max(white_rows)
+            
             k += white_distance - black_distance
 
         else:
@@ -55,11 +52,17 @@ class SimpleEvaluation(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
-            k += black_distance - white_distance
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distance = np.max(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distance = np.max(white_rows)
+            
+            k += white_distance - black_distance
         return k
     
     def __str__(self) -> str:
         return "SimpleEvaluation"  
+
 # same as SimpleEvaluation but counts white and black pieces
 # and takes the difference of the number of pieces
 class Evaluation_v1(Evaluations):
@@ -68,14 +71,6 @@ class Evaluation_v1(Evaluations):
         #legal_moves = self.env.get_legal_moves(state)
         height = self.env.height - 1
         
-        black_rows, _ = np.where(state.board == BLACK)
-        black_distance = np.min(black_rows)
-        white_rows, _ = np.where(state.board == WHITE)
-        white_distance = height - np.max(white_rows)
-        
-        num_black = np.count_nonzero(state.board == BLACK)
-        num_white = np.count_nonzero(state.board == WHITE)
-        
         if player == "white":
             if winner == WHITE:
                 return 100
@@ -83,8 +78,15 @@ class Evaluation_v1(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distance = np.max(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distance = np.max(white_rows)
+            
+            num_black = np.count_nonzero(state.board == BLACK)
+            num_white = np.count_nonzero(state.board == WHITE)
             k += white_distance - black_distance
-            k += num_white - num_black
+            k += 2*(num_white - num_black)
         else:
             if winner == WHITE:
                 return -100
@@ -92,13 +94,19 @@ class Evaluation_v1(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distance = np.max(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distance = np.max(white_rows)
+            
+            num_black = np.count_nonzero(state.board == BLACK)
+            num_white = np.count_nonzero(state.board == WHITE)
             k += black_distance - white_distance
-            k += num_black - num_white
+            k += 2*(num_black - num_white)
         return k
     
     def __str__(self) -> str:
         return "Evaluation_v1"
-
 
 # 100 if win
 # -100 if lose
@@ -109,11 +117,7 @@ class TSE(Evaluations):
         k = 0
         #legal_moves = self.env.get_legal_moves(state)
         height = self.env.height - 1
-        
-        black_rows, _ = np.where(state.board == BLACK)
-        black_distances = np.sum(black_rows)
-        white_rows, _ = np.where(state.board == WHITE)
-        white_distances = np.sum(height - 1*white_rows)
+
         
         if player == "white":
             if winner == WHITE:
@@ -122,6 +126,10 @@ class TSE(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
             k += white_distances - black_distances
 
         else:
@@ -131,6 +139,10 @@ class TSE(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
             k += black_distances - white_distances
         return k
     
@@ -148,10 +160,6 @@ class AMTSE(Evaluations):
         k += n_friendly_attacks
         
         height = self.env.height - 1
-        black_rows, _ = np.where(state.board == BLACK)
-        black_distances = np.sum(black_rows)
-        white_rows, _ = np.where(state.board == WHITE)
-        white_distances = np.sum(height - 1*white_rows)
         
 
         if player == "white":
@@ -161,6 +169,10 @@ class AMTSE(Evaluations):
                 return -100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
             k += white_distances - black_distances
         else:
             if winner == WHITE:
@@ -169,6 +181,10 @@ class AMTSE(Evaluations):
                 return 100
             elif winner == 0: #draw
                 return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
             k += black_distances - white_distances
         return k
     
@@ -424,7 +440,6 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
     def get_nb_state_expansions(self):
         return self.n_expansions
 
-
 # the one that I used for all my tests (the best one)
 ##### I USED THIS ONE FOR ALL MY TESTS #####
 ############# MAIN ONE #####################
@@ -443,15 +458,16 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         # this copy is only for the TimeoutError
         # that is, if the time limit is reached, then we dont have to undo all the moves
         # to get back to the original state
+        move = None
         game_copy = copy.deepcopy(game)
         try:
             for i in range(1, depth+1):
                 t_start_iteration = time.time()
                 value, move = self.max_value(game_copy, game_copy.current_state, i, float('-inf'), float('+inf'))
                 t_end_iteration= time.time()
-                #print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
-                #print("move: ", move)
-                #print("VALUE: ", value)
+                print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
+                print("move: ", move)
+                print("VALUE: ", value)
                 if value == 100:
                     return move
         except TimeoutError:
@@ -461,6 +477,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
+        move = None
         self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             #print(time.time() - self.t_start)
@@ -483,6 +500,7 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
+        move = None
         self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             #print(time.time() - self.t_start)
@@ -516,7 +534,6 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def __str__(self) -> str:
         return super().__str__() #+ " with alpha/beta iterative deepening"
-
 
 
 # not working/used (I was trying to implement the transposition table)

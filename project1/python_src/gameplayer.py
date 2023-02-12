@@ -141,10 +141,13 @@ def main():
     #search = MiniMax(SimpleEvaluation())
     #search = AlphaBeta(SimpleEvaluation())
     #search = AlphaBeta_iterative_deepening(SimpleEvaluation())
-    
-    search = AlphaBeta_iterative_deepening_new(AMTSE())
-    
     #search = AlphaBeta_iterative_deepening_t_table(SimpleEvaluation())
+    
+    #search = AlphaBeta_iterative_deepening_new(SimpleEvaluation())
+    #search = AlphaBeta_iterative_deepening_new(TSE())
+    #search = AlphaBeta_iterative_deepening_new(AMTSE())
+    search = AlphaBeta_iterative_deepening_new(Evaluation_v1())
+    
     #agent = RandomAgent()
     #agent = RandomLegalAgent(search)
     

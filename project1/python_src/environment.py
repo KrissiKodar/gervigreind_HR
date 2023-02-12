@@ -90,12 +90,14 @@ class Environment:
             return True, WHITE
         if any(state.board[0,:] == BLACK):
             return True, BLACK
-        return False, None
-        #try:
-        #    next(self.get_legal_moves(state))
-        #    return False, None
-        #except StopIteration:
-        #    return True, 0
+        #return False, None
+        try:
+            # check if there are any legal moves
+            next(self.get_legal_moves(state))
+            return False, None
+        except StopIteration:
+            # no legal moves, draw
+            return True, 0
     
     
     def count_attacks(self, state, opponent, one_step, y, x):
@@ -131,6 +133,15 @@ if __name__ == "__main__":
         print(i)
     
     print(env.get_n_attacking_moves(env.current_state))
+    
+    import timeit
+    
+    def my_function():
+        env.get_legal_moves(env.current_state)
+    n = 1000000
+    total_time = timeit.timeit(my_function, number=n)
+    average_time = total_time / n
+    print("Average time: ", average_time)
     
 
 
