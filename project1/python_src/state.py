@@ -18,9 +18,6 @@ class State:
         return line.join([" | ".join(str(cell) for cell in row) for row in self.board[::-1]])
 
 
-
-
-
 if __name__ == "__main__":
     import numpy as np
     WHITE, BLACK, EMPTY = 1, 2, 0

@@ -140,7 +140,8 @@ def main():
     
     #search = MiniMax(SimpleEvaluation())
     #search = AlphaBeta(SimpleEvaluation())
-    #search = AlphaBeta_iterative_deepening(SimpleEvaluation())
+    #search = AlphaBeta_iterative_deepening_new(SimpleEvaluation())
+    
     search = AlphaBeta_iterative_deepening_new(SimpleEvaluation())
     
     #agent = RandomAgent()

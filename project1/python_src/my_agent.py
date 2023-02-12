@@ -18,6 +18,7 @@ class MyAgent(Agent):
         self.height = 0
         self.env = None
         self.search_algorithm = search_algorithm
+        
     
 
     # start() is called once before you have to select the first action. Use it to initialize the agent.
@@ -34,13 +35,12 @@ class MyAgent(Agent):
         self.env = Environment(width, height)
         
         self.search_algorithm.init_evaluation(self.env, self.play_clock) # initialize the search algorithm
-        
         self.depth = 24 # set the depth of the search algorithm
-        
         self.total_time = 0
-        
         self.state_expansion_list = []
         self.total_expansions = 0
+        self.n_moves = 0
+        
  
     def next_action(self, last_action):
         if last_action:
@@ -48,26 +48,27 @@ class MyAgent(Agent):
                 last_player = 'white'
             else:
                 last_player = 'black'
-            print("%s moved from %s to %s" % (last_player, str(last_action[0:2]), str(last_action[2:4])))
+            #print("%s moved from %s to %s" % (last_player, str(last_action[0:2]), str(last_action[2:4])))
             # TODO: 1. update your internal world model according to the action that was just executed
             last_action = (x - 1 for x in last_action)
             self.env.move(self.env.current_state, last_action)
             #print()
             #print(self.env.current_state)
             #print()
-        else:
-            print("first move!")
+        #else:
+            #print("first move!")
 
         # update turn (above that line it myTurn is still for the previous state)
         self.my_turn = not self.my_turn
         if self.my_turn:
+            self.n_moves += 1
             # TODO: 2. run alpha-beta search to determine the best move
             
             #x1, y1, x2, y2 = self.get_best_move()
             #print()
             #print(self.env.current_state)
             #print()
-            print()
+            #print()
             t_move_start = time.time()        
             ultra_move = self.search_algorithm.do_search(self.env, self.role, self.depth)
             n_expansions = self.search_algorithm.get_nb_state_expansions()
@@ -75,25 +76,71 @@ class MyAgent(Agent):
             time_for_move = t_end - t_move_start
             self.total_time += time_for_move
             
-            print("Time for move calculation", time_for_move, " s")
-            print("Total time calculating", self.total_time, " s")
-            print("ultimate move: ", ultra_move)
+            #print("Time for move calculation", time_for_move, " s")
+            #print("Total time calculating", self.total_time, " s")
+            #print("ultimate move: ", ultra_move)
             #print("moves: ", self.env.get_legal_moves(self.env.current_state))
             self.total_expansions += n_expansions
             self.state_expansion_list.append(n_expansions)
-            print("state expansion list: ", self.state_expansion_list)
-            print("total state expansions so far: ", self.total_expansions)
-            print("average state expansions per search: ", np.mean(self.state_expansion_list))
-            print("average state expansions per second: ", np.mean(self.state_expansion_list)/time_for_move)
-            if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
-            print()
+            #print("state expansion list: ", self.state_expansion_list)
+            #print("total state expansions so far: ", self.total_expansions)
+            #print("average state expansions per search: ", np.mean(self.state_expansion_list))
+            #print("average state expansions per second: ", np.mean(self.state_expansion_list)/time_for_move)
+            #if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
+            #print()
             
             x1, y1, x2, y2 = ultra_move[0]+1, ultra_move[1]+1, ultra_move[2]+1, ultra_move[3]+1
             return "(move " + " ".join(map(str, [x1, y1, x2, y2])) + ")"
         else:
+            self.n_moves += 1
             return "noop"
+    
+    def cleanup(self, last_move):
+        # print evaluation used
+        # then role
+        # then play clock
+        # then average number of state expansions per search
+        # then average number of state expansions per second
+        # then total moves to finish
+        # then the total runtime
+        # then the winner
+        print("--------------------------------------------------")
+        board_size = str(self.width) + "x" + str(self.height)
+        print("Board size: ", board_size)
+        
+        evaluation_used = str(self.search_algorithm)
+        print("evaluation used: ", evaluation_used )
+        print("role: ", self.role)
+        print("play clock: ", self.play_clock)
+        
+        av_n_state_expansions = str(np.round(np.mean(self.state_expansion_list, 0)))
+        print("average number of state expansions per search: ", av_n_state_expansions)
+        state_ex_per_sec = 0
+        if self.total_time != 0:
+            state_ex_per_sec = str(np.round(self.total_expansions/self.total_time,1))
+            print("State expansions per second: ", state_ex_per_sec)
+        print("total moves to finish: ", self.n_moves)
+        print("total runtime: ", self.total_time)
+        # if index 3 in last_move is 1, then black won
+        if last_move[3] == 1:
+            winner = "black"
+        else:
+            winner = "white"
+        print("--------------------------------------------------")
+        # put the results in results.txt, in a table like format
+        if str(self.search_algorithm) == "SimpleEvaluation":
+            f = open("SimpleEvaluation_results.txt", "a")
+        if str(self.search_algorithm) == "TSE":
+            f = open("TSE.txt", "a")
+        if str(self.search_algorithm) == "AMTSE":
+            f = open("AMTSE.txt", "a")
+        
+        f.write(evaluation_used + " " + board_size + " " + str(self.role) + " " + str(self.play_clock) + " " + 
+                av_n_state_expansions  + " " + state_ex_per_sec + " " + 
+                str(self.n_moves) + " " + str(np.round(self.total_time,2)) + " " + winner + "\n")
+        f.close()
 
-
+        return
 
 
 

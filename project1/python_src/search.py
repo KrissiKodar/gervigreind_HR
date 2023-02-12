@@ -33,8 +33,12 @@ class SimpleEvaluation(Evaluations):
         black_rows, _ = np.where(state.board == BLACK)
         black_distance = np.min(black_rows)
         white_rows, _ = np.where(state.board == WHITE)
-        white_distance = height - np.max(white_rows)
-        
+        try:
+            white_distance = height - np.max(white_rows)
+        except:
+            white_distance = 0
+            
+            
         if player == "white":
             if winner == WHITE:
                 return 100
@@ -53,7 +57,9 @@ class SimpleEvaluation(Evaluations):
                 return 0
             k += black_distance - white_distance
         return k
-
+    
+    def __str__(self) -> str:
+        return "SimpleEvaluation"  
 # same as SimpleEvaluation but counts white and black pieces
 # and takes the difference of the number of pieces
 class Evaluation_v1(Evaluations):
@@ -89,53 +95,16 @@ class Evaluation_v1(Evaluations):
             k += black_distance - white_distance
             k += num_black - num_white
         return k
+    
+    def __str__(self) -> str:
+        return "Evaluation_v1"
 
-
-# same as SimpleEvaluation but counts attacking moves
-# also wants to kill as many pieces as possible
-class Evaluation_v2(Evaluations):
-    def eval(self, state, player, winner=None):
-        k = 0
-        
-        n_friendly_attacks, n_opponent_attacks = self.env.get_n_attacking_moves(state)
-        
-        height = self.env.height - 1
-        k += n_friendly_attacks
-        #k -= n_opponent_attacks
-        
-        black_rows, _ = np.where(state.board == BLACK)
-        black_distance = np.min(black_rows)
-        white_rows, _ = np.where(state.board == WHITE)
-        white_distance = height - np.max(white_rows)
-        
-        num_black = np.count_nonzero(state.board == BLACK)
-        num_white = np.count_nonzero(state.board == WHITE)
-
-        if player == "white":
-            if winner == WHITE:
-                return 100
-            elif winner == BLACK:
-                return -100
-            elif winner == 0: #draw
-                return 0
-            k += white_distance - black_distance
-            k += num_white - num_black
-        else:
-            if winner == WHITE:
-                return -100
-            elif winner == BLACK:
-                return 100
-            elif winner == 0: #draw
-                return 0
-            k += black_distance - white_distance
-            k += num_black - num_white
-        return k
 
 # 100 if win
 # -100 if lose
 # 0 if draw
 # distance of all black pieces from other side - distance of all white pieces from other side
-class Evaluation_v3(Evaluations):
+class TSE(Evaluations):
     def eval(self, state, player, winner=None):
         k = 0
         #legal_moves = self.env.get_legal_moves(state)
@@ -164,12 +133,51 @@ class Evaluation_v3(Evaluations):
                 return 0
             k += black_distances - white_distances
         return k
+    
+    def __str__(self) -> str:
+        return "TSE"
 
+# same as TSE but counts attacking moves
+# also wants to kill as many pieces as possible
+class AMTSE(Evaluations):
+    def eval(self, state, player, winner=None):
+        k = 0
+        
+        n_friendly_attacks= self.env.get_n_attacking_moves(state)
+        
+        k += n_friendly_attacks
+        
+        height = self.env.height - 1
+        black_rows, _ = np.where(state.board == BLACK)
+        black_distances = np.sum(black_rows)
+        white_rows, _ = np.where(state.board == WHITE)
+        white_distances = np.sum(height - 1*white_rows)
+        
+
+        if player == "white":
+            if winner == WHITE:
+                return 100
+            elif winner == BLACK:
+                return -100
+            elif winner == 0: #draw
+                return 0
+            k += white_distances - black_distances
+        else:
+            if winner == WHITE:
+                return -100
+            elif winner == BLACK:
+                return 100
+            elif winner == 0: #draw
+                return 0
+            k += black_distances - white_distances
+        return k
+    
+    def __str__(self) -> str:
+        return "AMTSE"
 # TODO: implement more and better evaluation functions
 
 
 ########################################################
-
 
 class SearchAlgorithm:
     evaluations = None
@@ -200,7 +208,11 @@ class SearchAlgorithm:
     
     def get_eval(self, state, player, the_winner):
         return self.evaluations.eval(state, player, the_winner)
+    
+    def __str__(self) -> str:
+        return str(self.evaluations)
 
+# this was my first attempt at implementing minimax (it works but is not very efficient)
 class MiniMax(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -220,13 +232,13 @@ class MiniMax(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v, move = float('-inf'), float('-inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1)
@@ -236,13 +248,13 @@ class MiniMax(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v, move = float('+inf'), float('+inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1)
@@ -258,6 +270,9 @@ class MiniMax(SearchAlgorithm):
     def get_nb_state_expansions(self):
         return self.n_expansions
 
+
+# I did this when I was trying to implement the alpha beta pruning
+# better version is AlphaBeta_iterative_deepening_new
 class AlphaBeta(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -275,6 +290,7 @@ class AlphaBeta(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
@@ -282,7 +298,6 @@ class AlphaBeta(SearchAlgorithm):
             return super().get_eval(state, self.player, winner), None
         v = float('-inf')
         move = None
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
@@ -295,6 +310,7 @@ class AlphaBeta(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
@@ -302,7 +318,6 @@ class AlphaBeta(SearchAlgorithm):
             return super().get_eval(state, self.player, winner), None
         v = float('+inf')
         move = None
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
@@ -321,6 +336,8 @@ class AlphaBeta(SearchAlgorithm):
     def get_nb_state_expansions(self):
         return self.n_expansions
 
+
+# this one was a failed attemt to implement iterative deepening
 class AlphaBeta_iterative_deepening(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -343,6 +360,7 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta, move_order, move_order_index):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
@@ -355,7 +373,6 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         print("move_order[", move_order_index, "]: ", move_order[move_order_index])
         print("depth: ", depth)
         print() """
-        self.n_expansions += 1
         for a in move_order[move_order_index]:
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta, move_order, move_order_index+1)
@@ -372,6 +389,7 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta, move_order, move_order_index):
+        self.n_expansions += 1
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
@@ -384,7 +402,6 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
         print("move_order[", move_order_index, "]: ", move_order[move_order_index])
         print("depth: ", depth)
         print() """
-        self.n_expansions += 1
         for a in move_order[move_order_index]:
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta, move_order, move_order_index+1)
@@ -407,12 +424,16 @@ class AlphaBeta_iterative_deepening(SearchAlgorithm):
     def get_nb_state_expansions(self):
         return self.n_expansions
 
+
+# the one that I used for all my tests (the best one)
+##### I USED THIS ONE FOR ALL MY TESTS #####
+############# MAIN ONE #####################
 class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
 
     def __init__(self, evaluation):
         self.n_expansions = 0
         super().__init__(evaluation)
-
+    
     def init_evaluation(self, env, play_clock):
         self.evaluations.init(env)
         self.play_clock = play_clock
@@ -428,20 +449,21 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
                 t_start_iteration = time.time()
                 value, move = self.max_value(game_copy, game_copy.current_state, i, float('-inf'), float('+inf'))
                 t_end_iteration= time.time()
-                print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
-                print("move: ", move)
-                print("VALUE: ", value)
+                #print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
+                #print("move: ", move)
+                #print("VALUE: ", value)
                 if value == 100:
                     return move
         except TimeoutError:
-            print("TIMEOUT")
-            print("best move yet: ", move)
+            #print("TIMEOUT")
+            #print("best move yet: ", move)
             return move
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
-            print(time.time() - self.t_start)
+            #print(time.time() - self.t_start)
             raise TimeoutError
         game_over, winner = game.is_terminal(state)    
         if game_over:
@@ -449,7 +471,6 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v = float('-inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
@@ -462,8 +483,9 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
-            print(time.time() - self.t_start)
+            #print(time.time() - self.t_start)
             raise TimeoutError
         game_over, winner = game.is_terminal(state)    
         if game_over:
@@ -471,7 +493,6 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v = float('+inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
@@ -493,7 +514,12 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
     def get_nb_state_expansions(self):
         return self.n_expansions
 
+    def __str__(self) -> str:
+        return super().__str__() #+ " with alpha/beta iterative deepening"
 
+
+
+# not working/used (I was trying to implement the transposition table)
 class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -529,6 +555,7 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
@@ -543,7 +570,6 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v = float('-inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.min_value(game, game.current_state, depth-1, alpha, beta)
@@ -557,6 +583,7 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
+        self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
@@ -570,7 +597,6 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
         v = float('+inf')
-        self.n_expansions += 1
         for a in game.get_legal_moves(state):
             game.move(state, a)
             v2, a2 = self.max_value(game, game.current_state, depth-1, alpha, beta)
@@ -594,10 +620,7 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         return self.n_expansions
 
 if __name__ == "__main__":
-    import hashlib
-
-    data = "Hello, World!"
-    hash_object = hashlib.sha256(data.encode())
-    print(hash_object)
-    hex_dig = hash_object.hexdigest()
-    print("The hexadecimal representation of the hash is:", hex_dig)
+    import numpy
+    # empty array
+    empty = numpy.array([1,1])
+    print(np.max(empty))
