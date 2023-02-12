@@ -128,17 +128,19 @@ if __name__ == "__main__":
     env = Environment(5, 5)
     env.move(env.current_state, (0, 0, 1, 2))
     env.move(env.current_state, (4, 4, 3, 2))
-    print(env.current_state.board)
-    for i in env.get_legal_moves(env.current_state):
-        print(i)
+    #print(env.current_state.board)
+    #for i in env.get_legal_moves(env.current_state):
+    #    print(i)
     
-    print(env.get_n_attacking_moves(env.current_state))
+    #print(env.get_n_attacking_moves(env.current_state))
     
     import timeit
     
     def my_function():
-        env.get_legal_moves(env.current_state)
-    n = 1000000
+        for i in env.get_legal_moves(env.current_state):
+            pass
+        
+    n = 1
     total_time = timeit.timeit(my_function, number=n)
     average_time = total_time / n
     print("Average time: ", average_time)
