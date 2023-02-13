@@ -5,8 +5,10 @@ from search import *
 import numpy as np
 
 import time
-# my main agent class
 
+
+
+# my main agent class !!!!!!!!!!
 class MyAgent(Agent):
     search_algorithm = None
     
@@ -35,7 +37,7 @@ class MyAgent(Agent):
         self.env = Environment(width, height)
         
         self.search_algorithm.init_evaluation(self.env, self.play_clock) # initialize the search algorithm
-        self.depth = 24 # set the depth of the search algorithm
+        self.depth = 100 # set the depth to arbitrary high value (as we have time limit)
         self.total_time = 0
         self.state_expansion_list = []
         self.total_expansions = 0
@@ -52,11 +54,9 @@ class MyAgent(Agent):
             # TODO: 1. update your internal world model according to the action that was just executed
             last_action = (x - 1 for x in last_action)
             self.env.move(self.env.current_state, last_action)
-            #print()
-            #print(self.env.current_state)
-            #print()
-        #else:
-            #print("first move!")
+
+        else:
+            print("first move!")
 
         # update turn (above that line it myTurn is still for the previous state)
         self.my_turn = not self.my_turn
@@ -64,31 +64,34 @@ class MyAgent(Agent):
             self.n_moves += 1
             # TODO: 2. run alpha-beta search to determine the best move
             
-            #x1, y1, x2, y2 = self.get_best_move()
-            #print()
-            #print(self.env.current_state)
-            #print()
-            #print()
-            t_move_start = time.time()        
+
+            t_move_start = time.time() 
+            
+            # ultra move is the output of the search algorithm!       
             ultra_move = self.search_algorithm.do_search(self.env, self.role, self.depth)
+            
             n_expansions = self.search_algorithm.get_nb_state_expansions()
             t_end = time.time()
             time_for_move = t_end - t_move_start
             self.total_time += time_for_move
             
-            print("Time for move calculation", time_for_move, " s")
-            print("Total time calculating", self.total_time, " s")
-            print("ultimate move: ", ultra_move)
-            print("moves: ", self.env.get_legal_moves(self.env.current_state))
+            # some print statements for seeing the progress of the agent
+            # and for debugging
+            
+            #print("Time for move calculation", time_for_move, " s")
+            #print("Total time calculating", self.total_time, " s")
+            #print("ultimate move: ", ultra_move)
+            #print("moves: ", self.env.get_legal_moves(self.env.current_state))
             self.total_expansions += n_expansions
             self.state_expansion_list.append(n_expansions)
-            print("state expansion list: ", self.state_expansion_list)
-            print("total state expansions so far: ", self.total_expansions)
-            print("average state expansions per search: ", np.mean(self.state_expansion_list))
-            print("average state expansions per second: ", np.mean(self.state_expansion_list)/time_for_move)
-            if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
-            print()
+            #print("state expansion list: ", self.state_expansion_list)
+            #print("total state expansions so far: ", self.total_expansions)
+            #print("average state expansions per search: ", np.mean(self.state_expansion_list))
+            #print("average state expansions per second: ", np.mean(self.state_expansion_list)/time_for_move)
+            #if self.total_time != 0: print("n_expansion_per_second: ", n_expansions/(self.total_time))
+            #print()
             
+            # send the move to the environment
             x1, y1, x2, y2 = ultra_move[0]+1, ultra_move[1]+1, ultra_move[2]+1, ultra_move[3]+1
             return "(move " + " ".join(map(str, [x1, y1, x2, y2])) + ")"
         else:
@@ -96,15 +99,6 @@ class MyAgent(Agent):
             return "noop"
     
     def cleanup(self, last_move):
-        # print evaluation used
-        # then role
-        # then play clock
-        # then average number of state expansions per search
-        # then average number of state expansions per second
-        # then total moves to finish
-        # then the total runtime
-        # then the winner
-        
         # Code below was for documenting the matches between the different evaluation functions
         
         #print("--------------------------------------------------")
@@ -137,6 +131,8 @@ class MyAgent(Agent):
         #    f = open("TSE.txt", "a")
         #if str(self.search_algorithm) == "AMTSE":
         #    f = open("AMTSE.txt", "a")
+        #if str(self.search_algorithm) == "AB_ID_TT":
+        #    f = open("transposition.txt", "a")
         #
         #f.write(evaluation_used + " " + board_size + " " + str(self.role) + " " + str(self.play_clock) + " " + 
         #        av_n_state_expansions  + " " + state_ex_per_sec + " " + 
@@ -147,6 +143,13 @@ class MyAgent(Agent):
 
 
 
+
+
+
+
+
+# The agent below was exclusively used for testing everything in the beginning
+# and making sure the agent was only doing legal moves
 class RandomLegalAgent(Agent):
     search_algorithm = None
     

@@ -36,6 +36,8 @@ class Environment:
         two_steps = 2 if whites_turn else -2
         
         # trying to speed up the code, avoiding duplicate calculations
+        # I have no idea if this actually helps
+        # but it doesn't hurt
         x_bigger_than_0 = x > 0
         x_less_than_width_minus_1 = x < self.width - 1
         
@@ -45,6 +47,11 @@ class Environment:
         x_minus_2 = x - 2
         y_plus_one_step = y + one_step
         y_plus_two_steps = y + two_steps
+        
+        # this does the same as from the teacher youtube video
+        # but wihout the can_move_n_steps_forward calls
+        # also uses yields instead of appending to a list
+        # which at least according to my tests is faster
         
         # two steps forward and one step left/right
         if (whites_turn and y <= self.height - 3) or (not whites_turn and y >= 2):
@@ -73,6 +80,9 @@ class Environment:
         the_board = state.board
         friendly = WHITE if whites_turn else BLACK
         friendly_indices = where(the_board  == friendly)
+        # the [::-1 if whites_turn else 1] reverses the list if whites turn
+        # so it gets the moves from the most forward piece first
+        # as those moves are more likely to be better/killer moves
         for i in list(zip(friendly_indices[0], friendly_indices[1]))[::-1 if whites_turn else 1]:
             yield from self.get_moves(the_board, whites_turn, *i)
 
@@ -113,6 +123,8 @@ class Environment:
         #return False, None
         try:
             # check if there are any legal moves
+            # I do it like this because get_legal_moves() is a generator
+            # (using yield instead of return)
             next(self.get_legal_moves(state))
             return False, None
         except StopIteration:

@@ -138,20 +138,19 @@ class GGPRequestHandler(BaseHTTPRequestHandler):
 def main():
     # TODO: use your own agent here
     
-    #search = MiniMax(SimpleEvaluation())
-    #search = AlphaBeta(SimpleEvaluation())
-    #search = AlphaBeta_iterative_deepening(SimpleEvaluation())
-    #search = AlphaBeta_iterative_deepening_t_table(SimpleEvaluation())
+    # Below is for AlphaBeta search with iterative deepening
+    
+    # use AlphaBeta_iterative_deepening_new instead of AlphaBeta_iterative_deepening !!!!!
     
     #search = AlphaBeta_iterative_deepening_new(SimpleEvaluation())
     #search = AlphaBeta_iterative_deepening_new(TSE())
     #search = AlphaBeta_iterative_deepening_new(AMTSE())
     #search = AlphaBeta_iterative_deepening_new(Evaluation_v1())
     
-    search = AlphaBeta_iterative_deepening_t_table(SimpleEvaluation())
-    
-    #agent = RandomAgent()
-    #agent = RandomLegalAgent(search)
+    # below is my attempt at using transposition table with alpha beta search
+    # and iterative deepening
+    # It had the best results of all of my attempts
+    search = AlphaBeta_iterative_deepening_t_table(TSE()) 
     
     
     agent = MyAgent(search)

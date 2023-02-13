@@ -1,13 +1,10 @@
-import collections
-import heapq
 import time
 import copy
 import numpy as np
-import hashlib
 
 WHITE, BLACK, EMPTY = 1, 2, 0
 
-TIMEOUT_DIFF = 0.01
+TIMEOUT_DIFF = 0.01 # 10 ms 
 
 class Evaluations:
 
@@ -24,6 +21,7 @@ class Evaluations:
 # -100 if lose
 # 0 if draw
 # most advanced black piece - most advanced white piece
+# the evalutation function described in the project description
 class SimpleEvaluation(Evaluations):
     def eval(self, state, player, winner=None):
         k = 0
@@ -63,8 +61,93 @@ class SimpleEvaluation(Evaluations):
     def __str__(self) -> str:
         return "SimpleEvaluation"  
 
+# 100 if win
+# -100 if lose
+# 0 if draw
+# distance of all black pieces from other side - distance of all white pieces from other side
+# this was the best evaluation function
+class TSE(Evaluations):
+    def eval(self, state, player, winner=None):
+        k = 0
+        #legal_moves = self.env.get_legal_moves(state)
+        height = self.env.height - 1
+
+        
+        if player == "white":
+            if winner == WHITE:
+                return 100
+            elif winner == BLACK:
+                return -100
+            elif winner == 0: #draw
+                return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
+            k += white_distances - black_distances
+
+        else:
+            if winner == WHITE:
+                return -100
+            elif winner == BLACK:
+                return 100
+            elif winner == 0: #draw
+                return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
+            k += black_distances - white_distances
+        return k
+    
+    def __str__(self) -> str:
+        return "TSE"
+
+# same as TSE but counts attacking moves
+class AMTSE(Evaluations):
+    def eval(self, state, player, winner=None):
+        k = 0
+        
+        n_friendly_attacks= self.env.get_n_attacking_moves(state)
+        
+        k += n_friendly_attacks
+        
+        height = self.env.height - 1
+
+        if player == "white":
+            if winner == WHITE:
+                return 100
+            elif winner == BLACK:
+                return -100
+            elif winner == 0: #draw
+                return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
+            k += white_distances - black_distances
+        else:
+            if winner == WHITE:
+                return -100
+            elif winner == BLACK:
+                return 100
+            elif winner == 0: #draw
+                return 0
+            black_rows, _ = np.where(state.board == BLACK)
+            black_distances = np.sum(height - black_rows)
+            white_rows, _ = np.where(state.board == WHITE)
+            white_distances = np.sum(white_rows)
+            k += black_distances - white_distances
+        return k
+    
+    def __str__(self) -> str:
+        return "AMTSE"
+# TODO: implement more and better evaluation functions
+
 # same as SimpleEvaluation but counts white and black pieces
 # and takes the difference of the number of pieces
+# did not show data for this in the PDF #
+# did not use this very much
 class Evaluation_v1(Evaluations):
     def eval(self, state, player, winner=None):
         k = 0
@@ -107,91 +190,6 @@ class Evaluation_v1(Evaluations):
     
     def __str__(self) -> str:
         return "Evaluation_v1"
-
-# 100 if win
-# -100 if lose
-# 0 if draw
-# distance of all black pieces from other side - distance of all white pieces from other side
-class TSE(Evaluations):
-    def eval(self, state, player, winner=None):
-        k = 0
-        #legal_moves = self.env.get_legal_moves(state)
-        height = self.env.height - 1
-
-        
-        if player == "white":
-            if winner == WHITE:
-                return 100
-            elif winner == BLACK:
-                return -100
-            elif winner == 0: #draw
-                return 0
-            black_rows, _ = np.where(state.board == BLACK)
-            black_distances = np.sum(height - black_rows)
-            white_rows, _ = np.where(state.board == WHITE)
-            white_distances = np.sum(white_rows)
-            k += white_distances - black_distances
-
-        else:
-            if winner == WHITE:
-                return -100
-            elif winner == BLACK:
-                return 100
-            elif winner == 0: #draw
-                return 0
-            black_rows, _ = np.where(state.board == BLACK)
-            black_distances = np.sum(height - black_rows)
-            white_rows, _ = np.where(state.board == WHITE)
-            white_distances = np.sum(white_rows)
-            k += black_distances - white_distances
-        return k
-    
-    def __str__(self) -> str:
-        return "TSE"
-
-# same as TSE but counts attacking moves
-# also wants to kill as many pieces as possible
-class AMTSE(Evaluations):
-    def eval(self, state, player, winner=None):
-        k = 0
-        
-        n_friendly_attacks= self.env.get_n_attacking_moves(state)
-        
-        k += n_friendly_attacks
-        
-        height = self.env.height - 1
-        
-
-        if player == "white":
-            if winner == WHITE:
-                return 100
-            elif winner == BLACK:
-                return -100
-            elif winner == 0: #draw
-                return 0
-            black_rows, _ = np.where(state.board == BLACK)
-            black_distances = np.sum(height - black_rows)
-            white_rows, _ = np.where(state.board == WHITE)
-            white_distances = np.sum(white_rows)
-            k += white_distances - black_distances
-        else:
-            if winner == WHITE:
-                return -100
-            elif winner == BLACK:
-                return 100
-            elif winner == 0: #draw
-                return 0
-            black_rows, _ = np.where(state.board == BLACK)
-            black_distances = np.sum(height - black_rows)
-            white_rows, _ = np.where(state.board == WHITE)
-            white_distances = np.sum(white_rows)
-            k += black_distances - white_distances
-        return k
-    
-    def __str__(self) -> str:
-        return "AMTSE"
-# TODO: implement more and better evaluation functions
-
 
 ########################################################
 
@@ -353,7 +351,8 @@ class AlphaBeta(SearchAlgorithm):
         return self.n_expansions
 
 
-# this one was a failed attemt to implement iterative deepening
+# this one was a failed attempt to implement iterative deepening
+# IGNORE THIS ONE !!!!
 class AlphaBeta_iterative_deepening(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -536,7 +535,8 @@ class AlphaBeta_iterative_deepening_new(SearchAlgorithm):
         return super().__str__() #+ " with alpha/beta iterative deepening"
 
 
-# not working/used (I was trying to implement the transposition table)
+########### SAME AS AlphaBeta_iterative_deepening_new #############
+################# BUT WITH TRANSPOSITION TABLE ####################
 class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
 
     def __init__(self, evaluation):
@@ -562,7 +562,7 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
                 print(f"search time: {t_end_iteration-t_start_iteration} seconds for depth {i}")
                 print("move: ", move)
                 print("VALUE: ", value)
-                print("transposition table: ", self.transposition_table)
+                #print("transposition table: ", self.transposition_table)
                 if value == 100:
                     return move
         except TimeoutError:
@@ -572,20 +572,29 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
         return move
 
     def max_value(self, game, state, depth, alpha, beta):
+        move = None
         self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
-        hash_of_incoming_state = hash(str(state))
-        if hash_of_incoming_state in self.transposition_table:
-            # return the value and move from the transposition table
-            print("transposition table hit")
-            return self.transposition_table[hash_of_incoming_state]
+        
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
+        
+        # check if state is in transposition table
+        key = (hash(state), self.player, depth)
+        if key in self.transposition_table:
+            entry = self.transposition_table[key]
+            if entry['type'] == 'exact':
+                return entry['value'], entry['move']
+            elif entry['type'] == 'lowerbound':
+                alpha = max(alpha, entry['value'])
+            else:
+                return entry['value'], entry['move']
+        
         v = float('-inf')
         for a in game.get_legal_moves(state):
             game.move(state, a)
@@ -594,25 +603,36 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
                 v, move = v2, a
                 alpha = max(alpha, v)           
             game.undo_move(game.current_state, a)
-            self.transposition_table[hash(str(state))] = (v, move)
             if v >= beta:
+                self.transposition_table[key] = {'type': 'upperbound', 'value': v, 'move': move}
                 return v, move
+        self.transposition_table[key] = {'type': 'exact', 'value': v, 'move': move}
         return v, move
     
     def min_value(self, game, state, depth, alpha, beta):
+        move = None
         self.n_expansions += 1
         if time.time() - self.t_start > self.play_clock-TIMEOUT_DIFF:
             print(time.time() - self.t_start)
             raise TimeoutError
-        hash_of_incoming_state = hash(str(state))
-        if hash_of_incoming_state in self.transposition_table:
-            print("transposition table hit")
-            return self.transposition_table[hash_of_incoming_state]
+        
         game_over, winner = game.is_terminal(state)    
         if game_over:
             return super().get_eval(state, self.player, winner), None
         if depth == 0:
             return super().get_eval(state, self.player, winner), None
+        
+        # check if state is in transposition table
+        key = (hash(state), self.player, depth)
+        if key in self.transposition_table:
+            entry = self.transposition_table[key]
+            if entry['type'] == 'exact':
+                return entry['value'], entry['move']
+            elif entry['type'] == 'upperbound':
+                beta = min(beta, entry['value'])
+            else:
+                return entry['value'], entry['move']
+        
         v = float('+inf')
         for a in game.get_legal_moves(state):
             game.move(state, a)
@@ -621,9 +641,10 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
                 v, move = v2, a
                 beta = min(beta, v)	
             game.undo_move(game.current_state, a)
-            self.transposition_table[hash(str(state))] = (v, move)
             if v <= alpha:
+                self.transposition_table[key] = {'type': 'lowerbound', 'value': v, 'move': move}
                 return v, move
+        self.transposition_table[key] = {'type': 'exact', 'value': v, 'move': move}
         return v, move
 
     def do_search(self, env, player, depth):
@@ -635,9 +656,7 @@ class AlphaBeta_iterative_deepening_t_table(SearchAlgorithm):
     
     def get_nb_state_expansions(self):
         return self.n_expansions
+    
+    def __str__(self) -> str:
+        return "AB_ID_TT"  
 
-if __name__ == "__main__":
-    import numpy
-    # empty array
-    empty = numpy.array([1,1])
-    print(np.max(empty))
