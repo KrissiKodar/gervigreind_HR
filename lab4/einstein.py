@@ -76,7 +76,6 @@ def setup_csp():
     
     # The Norwegian lives next to the blue house.
     model.Add(variables["Blue"] == 2) # because the Norwegian lives in the first house which is the leftmost house (1)
-    
     # Each of the five houses has a different color, each of the five inhabitants has a different nationality, prefers a different brand of cigarettes, a different drink, and owns a different pet.
     model.AddAllDifferent(variables["Englishman"], variables["Spaniard"], variables["Norwegian"], variables["Ukrainian"], variables["Japanese"])	
     model.AddAllDifferent(variables["Red"], variables["Green"], variables["Ivory"], variables["Yellow"], variables["Blue"])
@@ -86,6 +85,7 @@ def setup_csp():
 
     # have to turn the dictionary into a list so it can be put in the solver
     variables = [variables[var] for var in colors + nations + cigarettes + drinks + pets]	
+    print(variables)
     
     return model, variables
 
@@ -122,53 +122,36 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    """ colors =      ["Red", "Green", "Ivory", "Yellow", "Blue"]
-    nations =     ["Englishman", "Spaniard", "Norwegian", "Ukrainian", "Japanese"]
-    cigarettes =  ["Old Gold", "Kools", "Chesterfields", "Lucky Strike", "Parliaments"]
-    drinks =      ["Water", "Orange juice", "Tea", "Coffee", "Milk"]
-    pets =        ["Zebra", "Dog", "Fox", "Snails", "Horse"]
+    #main()
+    model = cp_model.CpModel()
+    variables = {}
+    colors = ["Red", "Green", "Ivory", "Yellow", "Blue"]
+    nations = ["Englishman", "Spaniard", "Norwegian", "Ukrainian", "Japanese"]
+    cigarettes = ["Old Gold", "Kools", "Chesterfields", "Lucky Strike", "Parliaments"]
+    drinks = ["Water", "Orange juice", "Tea", "Coffee", "Milk"]
+    pets = ["Zebra", "Dog", "Fox", "Snails", "Horse"]
+
+    # TODO: 1. Create all variables and add them to vars!
+ 	# e.g.,
+    # v1 =  model.NewIntVar(1, 5, "variable1")
+    # variables.append(v1)
+    # v2 =  model.NewIntVar(1, 5, "variable2")
+    # variables.append(v2)
     
-    # make colors a dictionary so we can access them by name
-    colors = {color: i for i, color in enumerate(colors)}
-    nations = {nation: i for i, nation in enumerate(nations)}
-    cigarettes = {cigarette: i for i, cigarette in enumerate(cigarettes)}
-    drinks = {drink: i for i, drink in enumerate(drinks)}
-    pets = {pet: i for i, pet in enumerate(pets)}
-    colors['Red']    = 2
-    colors['Green']  = 2
-    colors['Ivory']  = 2
-    colors['Yellow'] = 2
-    colors['Blue']   = 1
+    for var in colors + nations + cigarettes + drinks + pets:
+        variables[var] = model.NewIntVar(1, 5, var)
     
-    nations['Englishman'] = 4
-    nations['Spaniard']   = 4
-    nations['Norwegian']  = 1
-    nations['Ukrainian']  = 4
-    nations['Japanese']   = 4
-    
-    cigarettes['Old Gold']      = 5
-    cigarettes['Kools']         = 5
-    cigarettes['Chesterfields'] = 5
-    cigarettes['Lucky Strike']  = 5
-    cigarettes['Parliaments']   = 5
-    
-    drinks['Water']        = 4
-    drinks['Orange juice'] = 4
-    drinks['Tea']          = 4
-    drinks['Coffee']       = 4
-    drinks['Milk']         = 1
-    
-    pets['Zebra']   = 5
-    pets['Dog']     = 5
-    pets['Fox']     = 5
-    pets['Snails']  = 5
-    pets['Horse']   = 5
-    
-    
-    # print sum of all values
-    print(sum(colors.values()) + sum(nations.values()) + sum(cigarettes.values()) + sum(drinks.values()) + sum(pets.values()))
-     """
-    
-    
-    
+
+    # TODO: 2. Add the constraints to the model!
+    # You might need model.Add(), model.addAbsEquality() and model.AddAllDifferent()
+    # see https://developers.google.com/optimization/reference/python/sat/python/cp_model
+    # e.g.,
+    # model.Add(v1 == v2)
+    # model.Add(v1 != v2)
+    # model.Add(v1 == v2 + 2)
+    # model.addAbsEquality(2, v1 - v2) # meaning that abs(v1-v2) == 2
+    # etc.
+    # Milk is drunk in the middle house.
+    model.Add(variables["Milk"] == 4)
+    print(variables)
+    print(model)
