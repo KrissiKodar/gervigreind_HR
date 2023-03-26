@@ -1,9 +1,9 @@
 import itertools
 import time
-from nonogram import nonogram_solver
+from nonogram_permutations import nonogram_solver_perm
 
 
-class brute_force(nonogram_solver):
+class brute_force(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.states_visited = 0
@@ -27,7 +27,7 @@ class brute_force(nonogram_solver):
         return None
 
 # simple row sum constraint
-class s_row(nonogram_solver):
+class s_row(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -64,7 +64,7 @@ class s_row(nonogram_solver):
         return None
 
 # simple row and column sum constraint
-class s_row_col(nonogram_solver):
+class s_row_col(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -120,7 +120,7 @@ class s_row_col(nonogram_solver):
 # simple row and column sum constraint
 # and also row and column group constraint
 # (checking number of "groups" of filled cells)
-class s_row_col_groups(nonogram_solver):
+class s_row_col_groups(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -184,7 +184,7 @@ class s_row_col_groups(nonogram_solver):
         return None
 
 # same as above but not much changed (ignore this)
-class s_row_and_col_and_group_o(nonogram_solver):
+class s_row_and_col_and_group_o(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints

@@ -1,185 +1,490 @@
+import numpy as np
 import itertools
 import time
-import numpy as np
-import matplotlib.pyplot as plt
-import re
 
+# utility functions for various solvers
 class nonogram_solver:
-    def __init__(self, row_constraints, col_constraints):
-        self.row_constraints = row_constraints
-        self.col_constraints = col_constraints
+	def __init__(self, row_constraints, col_constraints):
+		self.row_constraints = row_constraints
+		self.col_constraints = col_constraints
+  
+	# check if solution
+	def is_valid(self, puzzle):
+		for r, row in enumerate(puzzle):
+			row_groups = [len(list(group)) for key, group in itertools.groupby(row) if key == 1]
+			if row_groups != self.row_constraints[r] and self.row_constraints[r] != [0]:
+				return False
+
+		for c, col in enumerate(zip(*puzzle)):
+			col_groups = [len(list(group)) for key, group in itertools.groupby(col) if key == 1]
+			if col_groups != self.col_constraints[c] and self.col_constraints[c] != [0]:
+				return False
+		return True
+
+	def max_n_groups(self, x):
+		return np.ceil(x / 2)
+	
+	def count_groups(self, row_or_col):
+		return len([group for key, group in itertools.groupby(row_or_col) if key == 1])
+
+# start at top left and work down, rows first
+# checks if the row or column sums are larger than the sum of the constraints
+# checks if the number of row or column groups is larger than the number of groups in the constraints
+#
+# when every variable has been assigned it checks if the solution is a valid solution
+# (backtracks if it is not)
+# backtracks at when every variable has been assigned and the solution is not valid
+class BF(nonogram_solver):
+	def __init__(self, puzzle, row_constraints, col_constraints):
+		super().__init__(row_constraints, col_constraints)
+		self.n_rows = puzzle.shape[0]
+		self.n_cols = puzzle.shape[1]
+		self.n_cells = self.n_rows * self.n_cols
+     
+		self.row_constraints = row_constraints
+		self.row_sums = [np.sum(row) for row in self.row_constraints]
+		self.row_groups = [len(row) for row in self.row_constraints]
+  
+		self.col_constraints = col_constraints
+		self.col_sums = [np.sum(col) for col in self.col_constraints]
+		self.col_groups = [len(col) for col in self.col_constraints]
+  
+		self.assignment = {}
+		self.states_visited = 0
+
+	def is_consistent(self, puzzle):
+		#row sums and groups
+		for i, row in enumerate(puzzle):
+			sum_row = np.sum(row)
+			row_groups = super().count_groups(row)
+			if sum_row > self.row_sums[i]:
+				return False
+			if row_groups > self.row_groups[i]:
+				return False
+			if sum_row == self.row_sums[i] and row_groups < self.row_groups[i]:
+				return False
+
+		#column sums and groups
+		for i, col in enumerate(puzzle.T):
+			sum_col = np.sum(col)
+			col_groups = super().count_groups(col)
+			if sum_col > self.col_sums[i]:
+				return False
+			if col_groups > self.col_groups[i]:
+				return False
+			if sum_col == self.col_sums[i] and col_groups < self.col_groups[i]:
+				return False
+			
+		return True
+
+	def start_search(self, puzzle):
+		return self.backtracking_search(puzzle)
+
+	def backtracking_search(self, puzzle, position = (0,0)):
+		# if assignment is complete then return assignment
+		if len(self.assignment) == self.n_cells:
+			if super().is_valid(puzzle):
+				return self.assignment
+			return False
+
+		# select unassigned variable
+		current_cell = position
+		self.states_visited += 1
+  
+		for i in [1, 0]:
+			puzzle[current_cell] = i
+			if self.is_consistent(puzzle, current_cell):
+				self.assignment[current_cell] = i
+				next_col = (current_cell[1] + 1) % self.n_cols
+				next_row = current_cell[0]+ (current_cell[1] + 1) // self.n_cols
+				next_pos = (next_row, next_col)
+				result = self.backtracking_search(puzzle, next_pos)
+				if result != False:
+					return result
+				del self.assignment[current_cell]
+		return False
+
+
+class pre_constrain_check(nonogram_solver):
+	def __init__(self, puzzle, row_constraints, col_constraints):
+		super().__init__(row_constraints, col_constraints)
+		self.n_rows = puzzle.shape[0]
+		self.n_cols = puzzle.shape[1]
+		self.n_cells = self.n_rows * self.n_cols
+     
+		self.row_constraints = row_constraints
+		self.row_sums = [np.sum(row) for row in self.row_constraints]
+		self.row_groups = [len(row) for row in self.row_constraints]
+  
+		self.col_constraints = col_constraints
+		self.col_sums = [np.sum(col) for col in self.col_constraints]
+		self.col_groups = [len(col) for col in self.col_constraints]
+  
+		self.assignment = {}
+		self.states_visited = 0
+
+		# pre-constrain check
+		for i in range(self.n_rows):
+			for j in range(self.n_cols):
+				self.assignment[(i, j)] = None
+
+		# check how many groups of filled in cells can fit in the row or column
+		# if the number of groups in the constraint is equal to the number of groups that can fit in the row or column
+		# then fill the row or column accordingly
+		max_n_row_groups = super().max_n_groups(self.n_rows)
+		max_n_colgroups = super().max_n_groups(self.n_rows)
+		for i, row_group_size in enumerate(self.row_groups):
+			if row_group_size == max_n_row_groups:
+				if self.n_cols % 2 == 1:
+					for j in range(self.n_cols):
+						if j % 2 == 0:
+							self.assignment[(i, j)] = 1
+						else:
+							self.assignment[(i, j)] = 0
+				else:
+					for j in range(self.n_cols):
+						if j % 2 == 0:
+							self.assignment[(i, j)] = 0
+						else:
+							self.assignment[(i, j)] = 1
+		for i, col_group_size in enumerate(self.col_groups):
+			if col_group_size == max_n_colgroups:
+				if self.n_rows % 2 == 1:
+					for j in range(self.n_rows):
+						if j % 2 == 0:
+							self.assignment[(j, i)] = 1
+						else:
+							self.assignment[(j, i)] = 0
+				else:
+					for j in range(self.n_rows):
+						if j % 2 == 0:
+							self.assignment[(j, i)] = 0
+						else:
+							self.assignment[(j, i)] = 1
+       
+		# if there is only one group in the constraint and the sum of the constraint is equal to the number of cells in the row or column
+		# then fill the row or column accordingly
+		for i in range(self.n_rows):
+			if self.row_sums[i] == self.n_cols:
+				for j in range(self.n_cols):
+					self.assignment[(i, j)] = 1
+		for i in range(self.n_cols):
+			if self.col_sums[i] == self.n_rows:
+				for j in range(self.n_rows):
+					self.assignment[(j, i)] = 1
+     
+		temp_puzzle = np.zeros((self.n_rows, self.n_cols))
+		for key, value in self.assignment.items():
+			if value != None:
+				temp_puzzle[key] = value
+		#print(temp_puzzle)
+		# forwards checking
+		for i, row in enumerate(temp_puzzle):
+			if np.sum(row) == self.row_sums[i] and super().count_groups(row) == self.row_groups[i]:
+				# assign values from temp_puzzle row to self.assignment
+				for j, value in enumerate(row):
+					self.assignment[(i, j)] = value
+		for i, col in enumerate(temp_puzzle.T):
+			if np.sum(col) == self.col_sums[i] and super().count_groups(col) == self.col_groups[i]:
+				# assign values from temp_puzzle col to self.assignment
+				for j, value in enumerate(col):
+					self.assignment[(j, i)] = value
+		#print(self.assignment) 
+
+	def is_consistent(self, puzzle):
+		#row sums and groups
+		for i, row in enumerate(puzzle):
+			sum_row = np.sum(row)
+			row_groups = super().count_groups(row)
+			if sum_row > self.row_sums[i]:
+				return False
+			if row_groups > self.row_groups[i]:
+				return False
+			if sum_row == self.row_sums[i] and row_groups < self.row_groups[i]:
+				return False
+
+		#column sums and groups
+		for i, col in enumerate(puzzle.T):
+			sum_col = np.sum(col)
+			col_groups = super().count_groups(col)
+			if sum_col > self.col_sums[i]:
+				return False
+			if col_groups > self.col_groups[i]:
+				return False
+			if sum_col == self.col_sums[i] and col_groups < self.col_groups[i]:
+				return False
+			
+		return True
+
+	def start_search(self, puzzle):
+		# where dictionary is not None assign values to puzzle
+		for key, value in self.assignment.items():
+			if value != None:
+				puzzle[key] = value
+		print("before starting search:")
+		print(puzzle)
+		print("\n\n\n")
+		return self.backtracking_search(puzzle)
+
+	def backtracking_search(self, puzzle):
+		# if assignment is complete then return assignment
+		if None not in self.assignment.values():
+			if super().is_valid(puzzle):
+				return self.assignment
+			print("invalid solution, backtracking...")
+			return False
+
+  		# select unassigned variable
+		#current_cell = position
+		# select next key in dictionary which has a value of None
+		for key, value in self.assignment.items():
+			if value == None:
+				current_cell = key
+				break
+		self.states_visited += 1
+
+		# if variable has a value in the assignment then skip (it has already been assigned in the pre-solver)
+		# if self.assignment[current_cell] != None:
+		#	return self.backtracking_search(puzzle)
+		for i in [1, 0]:
+			puzzle[current_cell] = i
+			print("\n\n")
+			print(puzzle)
+			print("current cell = ", current_cell)
+			# print unassigned variables
+			print("unassigned variables:")
+			for key, value in self.assignment.items():
+				if value == None:
+					print(key)
+			print("\n\n")
+			if self.is_consistent(puzzle):
+				self.assignment[current_cell] = i
+				result = self.backtracking_search(puzzle)
+				if result != False:
+					return result
+				self.assignment[current_cell] = None
+		print("backtracking...")
+		return False
+
+class pre_constrain_check_forward_check(nonogram_solver):
+	def __init__(self, puzzle, row_constraints, col_constraints):
+		super().__init__(row_constraints, col_constraints)
+		self.n_rows = puzzle.shape[0]
+		self.n_cols = puzzle.shape[1]
+		self.n_cells = self.n_rows * self.n_cols
+     
+		self.row_constraints = row_constraints
+		self.row_sums = [np.sum(row) for row in self.row_constraints]
+		self.row_groups = [len(row) for row in self.row_constraints]
+  
+		self.col_constraints = col_constraints
+		self.col_sums = [np.sum(col) for col in self.col_constraints]
+		self.col_groups = [len(col) for col in self.col_constraints]
+  
+		self.assignment = {}
+		self.states_visited = 0
+
+		# pre-constrain check
+		for i in range(self.n_rows):
+			for j in range(self.n_cols):
+				self.assignment[(i, j)] = None
+
+		# check how many groups of filled in cells can fit in the row or column
+		# if the number of groups in the constraint is equal to the number of groups that can fit in the row or column
+		# then fill the row or column accordingly
+		max_n_row_groups = super().max_n_groups(self.n_rows)
+		max_n_colgroups = super().max_n_groups(self.n_rows)
+		for i, row_group_size in enumerate(self.row_groups):
+			if row_group_size == max_n_row_groups:
+				if self.n_cols % 2 == 1:
+					for j in range(self.n_cols):
+						if j % 2 == 0:
+							self.assignment[(i, j)] = 1
+						else:
+							self.assignment[(i, j)] = 0
+				else:
+					for j in range(self.n_cols):
+						if j % 2 == 0:
+							self.assignment[(i, j)] = 0
+						else:
+							self.assignment[(i, j)] = 1
+		for i, col_group_size in enumerate(self.col_groups):
+			if col_group_size == max_n_colgroups:
+				if self.n_rows % 2 == 1:
+					for j in range(self.n_rows):
+						if j % 2 == 0:
+							self.assignment[(j, i)] = 1
+						else:
+							self.assignment[(j, i)] = 0
+				else:
+					for j in range(self.n_rows):
+						if j % 2 == 0:
+							self.assignment[(j, i)] = 0
+						else:
+							self.assignment[(j, i)] = 1
+       
+		# if there is only one group in the constraint and the sum of the constraint is equal to the number of cells in the row or column
+		# then fill the row or column accordingly
+		for i in range(self.n_rows):
+			if self.row_sums[i] == self.n_cols:
+				for j in range(self.n_cols):
+					self.assignment[(i, j)] = 1
+		for i in range(self.n_cols):
+			if self.col_sums[i] == self.n_rows:
+				for j in range(self.n_rows):
+					self.assignment[(j, i)] = 1
+     
+		temp_puzzle = np.zeros((self.n_rows, self.n_cols))
+		for key, value in self.assignment.items():
+			if value != None:
+				temp_puzzle[key] = value
+		#print(temp_puzzle)
+		# forwards checking
+		for i, row in enumerate(temp_puzzle):
+			if np.sum(row) == self.row_sums[i] and super().count_groups(row) == self.row_groups[i]:
+				# assign values from temp_puzzle row to self.assignment
+				for j, value in enumerate(row):
+					self.assignment[(i, j)] = value
+		for i, col in enumerate(temp_puzzle.T):
+			if np.sum(col) == self.col_sums[i] and super().count_groups(col) == self.col_groups[i]:
+				# assign values from temp_puzzle col to self.assignment
+				for j, value in enumerate(col):
+					self.assignment[(j, i)] = value
+		#print(self.assignment) 
+
+	def is_consistent(self, puzzle):
+		#row sums and groups
+		for i, row in enumerate(puzzle):
+			sum_row = np.sum(row)
+			row_groups = super().count_groups(row)
+			if sum_row > self.row_sums[i]:
+				return False
+			if row_groups > self.row_groups[i]:
+				return False
+			if sum_row == self.row_sums[i] and row_groups < self.row_groups[i]:
+				return False
+
+		#column sums and groups
+		for i, col in enumerate(puzzle.T):
+			sum_col = np.sum(col)
+			col_groups = super().count_groups(col)
+			if sum_col > self.col_sums[i]:
+				return False
+			if col_groups > self.col_groups[i]:
+				return False
+			if sum_col == self.col_sums[i] and col_groups < self.col_groups[i]:
+				return False
+			
+		return True
+
+	def start_search(self, puzzle):
+		# where dictionary is not None assign values to puzzle
+		for key, value in self.assignment.items():
+			if value != None:
+				puzzle[key] = value
+		print("before starting search:")
+		print(puzzle)
+		print("\n\n\n")
+		return self.backtracking_search(puzzle)
+
+	def forward_checking(self, puzzle):
+		# forwards checking
+		for i, row in enumerate(puzzle):
+			if np.sum(row) == self.row_sums[i] and super().count_groups(row) == self.row_groups[i]:
+				# assign values from puzzle row to self.assignment
+				for j, value in enumerate(row):
+					self.assignment[(i, j)] = value
+		for i, col in enumerate(puzzle.T):
+			if np.sum(col) == self.col_sums[i] and super().count_groups(col) == self.col_groups[i]:
+				# assign values from puzzle col to self.assignment
+				for j, value in enumerate(col):
+					self.assignment[(j, i)] = value
+
+
+	def backtracking_search(self, puzzle):
+		# if assignment is complete then return assignment
+		if None not in self.assignment.values():
+			if super().is_valid(puzzle):
+				return self.assignment
+			return False
+
+  		# select unassigned variable
+		#current_cell = position
+		# select next key in dictionary which has a value of None
+		for key, value in self.assignment.items():
+			if value == None:
+				current_cell = key
+				break
+		self.states_visited += 1
+
+		# if variable has a value in the assignment then skip (it has already been assigned in the pre-solver)
+		# if self.assignment[current_cell] != None:
+		#	return self.backtracking_search(puzzle)
+		for i in [1, 0]:
+			puzzle[current_cell] = i
+			print("\n\n")
+			print(puzzle)
+			print("current cell = ", current_cell)
+			# print unassigned variables
+			print("unassigned variables:")
+			for key, value in self.assignment.items():
+				if value == None:
+					print(key)
+			print("\n\n")
+			if self.is_consistent(puzzle):
+				self.assignment[current_cell] = i
+				result = self.backtracking_search(puzzle)
+				if result != False:
+					return result
+				self.assignment[current_cell] = None
+		print("backtracking")
+		return False
+
+def test_solver(solver, row_constraints, col_constraints):
+	puzzle = np.zeros((len(row_constraints), len(col_constraints)))
+	start_time = time.time()	
+	current_solver = solver(puzzle, row_constraints, col_constraints)
+	assignments = current_solver.start_search(puzzle)
+	end = time.time()
+	print(f"Time taken = {end - start_time} s")
+	print(assignments)
+	print(f"States visited = {current_solver.states_visited}")
+	for row in range(puzzle.shape[0]):
+		for col in range(puzzle.shape[1]):
+			if assignments[(row, col)] == 1:
+				print(" #", end="")
+			else:
+				print(" .", end="")
+		print()
+	print("Solver finished\n\n")
  
-    # this function checks if the current filled in puzzle
-    # satisfies the row and column constraints
-    # it checks if the puzzle is actually solved, if so return True
-    def is_valid(self, puzzle):
-        for r, row in enumerate(puzzle):
-            row_groups = [len(list(group)) for key, group in itertools.groupby(row) if key == 1]
-            if row_groups != self.row_constraints[r] and self.row_constraints[r] != [0]:
-                return False
+if __name__ == '__main__':
+	print("################ PROGRAM START #################\n\n")
+	row_constraints = [[1], [1],   [2],   [1,1,1], [1,2]]
+	col_constraints = [[2], [1,1], [3],   [1,1],   [1]]
+ 
+	#row_constraints = [[1], [1,1],   [1],   [1], [5]]
+	#col_constraints = [[2], [2,1], [1],   [1,1],   [1,1]]
+ 
+	#row_constraints = [[7], [1,1,2], [1,1,1,1], [1,2,1], [1,1,1,1], [1,1,2], [7]]
+	#col_constraints = [[7], [1,1], [7], [1,1,1], [1,1,1,1], [2,2], [7]]	
+	
+	#row_constraints = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
+	#col_constraints = [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
+	
+	
 
-        for c, col in enumerate(zip(*puzzle)):
-            col_groups = [len(list(group)) for key, group in itertools.groupby(col) if key == 1]
-            if col_groups != self.col_constraints[c] and self.col_constraints[c] != [0]:
-                return False
-        return True
-    
-    def print_current_state(self, puzzle):
-        print("\n")
-        for row in puzzle:
-            print("".join(["# " if cell == 1 else "- " for cell in row]))
-        print("\n")
-    
-    def print_states_visited(self, current_solver):
-        print("States visited:", current_solver.states_visited)
-    
-    
-    def __str__(self):
-        return self.__class__.__name__
-    
-    def __name__(self):
-        return self.__class__.__name__
+	#test_solver(BF, row_constraints, col_constraints)
+	#test_solver(pre_constrain_check, row_constraints, col_constraints)
+	test_solver(pre_constrain_check_forward_check, row_constraints, col_constraints)
+	
+	#puzzle = np.zeros((len(row_constraints), len(col_constraints)))
+	#ttt = pre_constrain_check(puzzle, row_constraints, col_constraints)
+	#print(ttt.assignment)
+	
 
+	
 
-class nonogram_puzzle_and_constraints:
-    def __init__(self, row_constraints, col_constraints):
-        self.row_constraints = row_constraints
-        self.col_constraints = col_constraints
-        self.rows = len(row_constraints)
-        self.cols = len(col_constraints)
+	
+	
 
-    def __str__(self):
-        return f"{self.rows} by {self.cols} puzzle"  
-    
-    def __name__(self):
-        return f"{self.rows} by {self.cols}"
-    
-    def get_constraints(self):
-        return self.row_constraints, self.col_constraints
-
-    def get_puzzle(self):
-        return [(0,) * self.cols] * self.rows
-
-
-def test_solver(solver, puzzle):
-    start_time = time.time()
-    current_solver = solver(*puzzle.get_constraints())
-    solution = current_solver.solve(puzzle.get_puzzle())
-    end_time = time.time()
-    #print("\n")
-    #print(str(puzzle) + " solved with " + str(current_solver))
-    if solution is not None:
-        #print(f"Time to solve: {end_time - start_time} seconds")
-        #current_solver.print_states_visited(current_solver)
-        #print("Solution:")
-        for row in solution:
-            print("".join(["# " if cell == 1 else "- " for cell in row]))
-        solution_time = end_time - start_time
-        states_explored = current_solver.states_visited
-        return solution_time, states_explored, str(current_solver)
-    else:
-        print("No solution found.")
-        current_solver.print_states_visited(current_solver)
-
-
-
-def run_solvers_on_puzzles(solvers, puzzles):
-    results = {}
-    for solver in solvers:
-        solver_name = re.search(r'\.?(\w+)\'?>$', str(solver)).group(1)
-        results[solver_name] = {'times': [], 'states_visited': []}
-        for puzzle in puzzles:
-            try:
-                solution_time, states_explored, _ = test_solver(solver, puzzle)
-                results[solver_name]['times'].append(solution_time)
-                results[solver_name]['states_visited'].append(states_explored)
-            except Exception as e:
-                print(f"Error occurred for solver {solver_name} on puzzle {puzzle}: {e}")
-    return results
-
-def plot_metrics(results):
-    plt.rcParams.update({'font.size': 8})
-    solver_names = list(results.keys())
-    avg_times = [np.mean(results[solver]['times']) for solver in solver_names]
-    avg_states_visited = [np.mean(results[solver]['states_visited']) for solver in solver_names]
-
-    def create_subplot(title, ylabel, yscale='linear'):
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel('Solvers')
-        ax.set_ylabel(ylabel)
-        ax.set_yscale(yscale)
-        plt.xticks(rotation=30, ha='right')
-        plt.tight_layout()
-        return fig, ax
-
-    # Average Time (Linear)
-    fig_time_linear, ax_time_linear = create_subplot('Average Time (Linear)', 'Average Time (s)')
-    ax_time_linear.bar(solver_names, avg_times, alpha=0.5, color='b', label='Average Time')
-    plt.show()
-
-    # Average Time (Logarithmic)
-    fig_time_log, ax_time_log = create_subplot('Average Time (Logarithmic)', 'Average Time (s)', yscale='log')
-    ax_time_log.bar(solver_names, avg_times, alpha=0.5, color='b', label='Average Time')
-    plt.show()
-
-    # Average States Visited (Linear)
-    fig_states_linear, ax_states_linear = create_subplot('Average States Visited (Linear)', 'Average States Visited')
-    ax_states_linear.bar(solver_names, avg_states_visited, alpha=0.5, color='g', label='Average States Visited')
-    plt.show()
-
-    # Average States Visited (Logarithmic)
-    fig_states_log, ax_states_log = create_subplot('Average States Visited (Logarithmic)', 'Average States Visited', yscale='log')
-    ax_states_log.bar(solver_names, avg_states_visited, alpha=0.5, color='g', label='Average States Visited')
-    plt.show()
-
-
-
-from simple_solvers import *
-from simple_backtracking_solvers import *
-from AC3_solvers import *
-
-
-# if name main
-if __name__ == "__main__":	
-    col_constraints_5_by_5 =   [[4], [3,1], [1], [3], [1]]
-    row_constraints_5_by_5= [[3],[2,1], [2,2],[1],[2]]
-
-    puzzle_5_by_5 = nonogram_puzzle_and_constraints(row_constraints_5_by_5, col_constraints_5_by_5)
-
-
-    col_constraints_7_by_7 = [[7], [1,1], [7], [1,1,1], [1,1,1,1], [2,2], [7]]
-    row_constraints_7_by_7 = [[7], [1,1,2], [1,1,1,1], [1,2,1], [1,1,1,1], [1,1,2], [7]]
-
-    puzzle_7_by_7 = nonogram_puzzle_and_constraints(row_constraints_7_by_7, col_constraints_7_by_7)
-
-    col_constraints_10_by_10 = [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
-    row_constraints_10_by_10 = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
-    puzzle_10_by_10 = nonogram_puzzle_and_constraints(row_constraints_10_by_10, col_constraints_10_by_10)
-    
-    col_constraints_10_by_10_2 = [[4,2], [3], [4], [2], [5], [1,1], [1,6], [6,1], [8,1], [4,1]]
-    row_constraints_10_by_10_2 = [[2], [3,2], [3,4], [3,3], [1,1,3], [6], [2,3], [1,1,3], [1,1,1], [6]]
-    puzzle_10_by_10_2 = nonogram_puzzle_and_constraints(row_constraints_10_by_10_2, col_constraints_10_by_10_2)
-
-    col_constraints_house = [[5,6,4],[7,3,5],[2,7,5],[1,6,6],[1,3,6,6],[1,3,6,7],[7,4,7],[11,6],[4,4,1,4],[1,6,1,3],[7,4,3],[6,5,2],[2,2,3,1,2],[4,4,1,1],[4,7,2],
-                         [4,4,1,2],[5,3,1,1],[6,5,1], [2,2,4,1],[5,1,1],[7,1,1,1],[12,1,1],[5,6,3],[1,10,1],[3,8]]
-
-    row_constraints_house = [[1, 5, 11, 4] ,[3, 3, 9, 2, 1] ,[2, 8, 5, 5] ,[2, 14, 5] ,[2, 4, 4, 2, 6] ,[2, 6, 5, 2] ,
-                            [11, 7]  ,[6, 3, 3, 6] ,[1, 7, 5, 5] ,[8, 7, 4]  ,[8, 9, 4] , [12, 1, 8] ,[2, 1, 2], [9, 3], 
-                             [2], [9], [6], [6], [6], [7], [8], [8], [8], [7], [7]]
-    puzzle_house = nonogram_puzzle_and_constraints(row_constraints_house, col_constraints_house)
-    #test_solver(brute_force, puzzle_5_by_5)
-    # list of solver 
-    # s_row_constraint, s_row_and_col, s_row_and_col_and_group, s_row_and_col_and_group_o, AC3, AC3_iterative_deepening, A
-    #list_of_solvers = [brute_force, s_row, s_row_col, s_row_col_groups, AC3_organized, AC3_backjumping]
-    
-    list_of_solvers = [s_row_col_groups, AC3_organized, AC3_backjumping]
-    list_of_puzzles = [puzzle_10_by_10]
-    #test_solver(s_row_col, puzzle_7_by_7)
-    # Run the solvers on the puzzles
-    #results = run_solvers_on_puzzles(list_of_solvers, list_of_puzzles)
-
-    # Plot the metrics
-    #plot_metrics(results)
-    
-    test_solver(AC3_organized, puzzle_house)

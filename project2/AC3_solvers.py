@@ -1,10 +1,10 @@
 import itertools
 import time
-from nonogram import nonogram_solver
+from nonogram_permutations import nonogram_solver_perm
 
 
 # backtracking and AC3 solvers
-class AC3(nonogram_solver):
+class AC3(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -77,7 +77,6 @@ class AC3(nonogram_solver):
     def propagate_constraints(self):
         while self.queue:
             row, col = self.queue.pop(0)
-
             if self.revise(row, col):
                 if not self.all_row_permutations[row]:
                     return False
@@ -156,7 +155,7 @@ class AC3(nonogram_solver):
         # return failure
         return None
 
-class AC3_organized(nonogram_solver):
+class AC3_organized(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -309,7 +308,7 @@ class AC3_organized(nonogram_solver):
     def fraction_of_states_visited(self):
         return self.states_visited / self.state_space_after_reduction
 
-class AC3_backjumping(nonogram_solver):
+class AC3_backjumping(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -481,7 +480,7 @@ class AC3_backjumping(nonogram_solver):
         solution, _ = self.backjumping_solve()
         return solution
 
-class AC3_iterative_deepening(nonogram_solver):
+class AC3_iterative_deepening(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints

@@ -1,10 +1,11 @@
 import itertools
 import time
-from nonogram import nonogram_solver
+from nonogram_permutations import nonogram_solver_perm
 
 
 # following backtracking pseudocode from textbook
-class A(nonogram_solver):
+# using a dictionary to store assignments to variables (rows)
+class A(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -90,7 +91,7 @@ class A(nonogram_solver):
         return None
 
 # backtracking + minimum remaining values
-class A_MRV(nonogram_solver):
+class A_MRV(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
@@ -188,7 +189,7 @@ class A_MRV(nonogram_solver):
         return None
 
 # backtracking + least constraining value
-class A_LCV(nonogram_solver):
+class A_LCV(nonogram_solver_perm):
     def __init__(self, row_constraints, col_constraints):
         super().__init__(row_constraints, col_constraints)
         self.row_constraints = row_constraints
