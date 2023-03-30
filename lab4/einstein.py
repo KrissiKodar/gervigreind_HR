@@ -85,7 +85,8 @@ def setup_csp():
 
     # have to turn the dictionary into a list so it can be put in the solver
     variables = [variables[var] for var in colors + nations + cigarettes + drinks + pets]	
-    print(variables)
+    #print(variables)
+    print(model)
     
     return model, variables
 
@@ -122,36 +123,4 @@ def main():
 
 
 if __name__ == "__main__":
-    #main()
-    model = cp_model.CpModel()
-    variables = {}
-    colors = ["Red", "Green", "Ivory", "Yellow", "Blue"]
-    nations = ["Englishman", "Spaniard", "Norwegian", "Ukrainian", "Japanese"]
-    cigarettes = ["Old Gold", "Kools", "Chesterfields", "Lucky Strike", "Parliaments"]
-    drinks = ["Water", "Orange juice", "Tea", "Coffee", "Milk"]
-    pets = ["Zebra", "Dog", "Fox", "Snails", "Horse"]
-
-    # TODO: 1. Create all variables and add them to vars!
- 	# e.g.,
-    # v1 =  model.NewIntVar(1, 5, "variable1")
-    # variables.append(v1)
-    # v2 =  model.NewIntVar(1, 5, "variable2")
-    # variables.append(v2)
-    
-    for var in colors + nations + cigarettes + drinks + pets:
-        variables[var] = model.NewIntVar(1, 5, var)
-    
-
-    # TODO: 2. Add the constraints to the model!
-    # You might need model.Add(), model.addAbsEquality() and model.AddAllDifferent()
-    # see https://developers.google.com/optimization/reference/python/sat/python/cp_model
-    # e.g.,
-    # model.Add(v1 == v2)
-    # model.Add(v1 != v2)
-    # model.Add(v1 == v2 + 2)
-    # model.addAbsEquality(2, v1 - v2) # meaning that abs(v1-v2) == 2
-    # etc.
-    # Milk is drunk in the middle house.
-    model.Add(variables["Milk"] == 4)
-    print(variables)
-    print(model)
+    main()

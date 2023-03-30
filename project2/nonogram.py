@@ -187,7 +187,9 @@ class backtracking_with_prechecking(nonogram_solver):
 			for j in range(self.n_cols):
 				self.assignment[(i, j)] = None
      
-		#simple boxes
+		# simple boxes
+		# simple boxes is a method explained here https://en.wikipedia.org/wiki/Nonogram
+		# it is a method which can solve parts of the puzzle before starting the search.
 		for i, row in enumerate(puzzle):
 			index = 0
 			block = 1
@@ -211,7 +213,9 @@ class backtracking_with_prechecking(nonogram_solver):
 				if value == 1:
 					self.assignment[(i, m)] = 1
      
-			# simple spaces			
+			# simple spaces	
+			# simple spaces	 is a method explained here https://en.wikipedia.org/wiki/Nonogram
+			# it is a method which can solve parts of the puzzle before starting the search.
 			row_groups = [len(list(group)) for key, group in itertools.groupby(result) if key == 1]
 			if len(row_groups) == len(self.row_constraints[i]):
 				test = [0]*len(result)
@@ -230,7 +234,10 @@ class backtracking_with_prechecking(nonogram_solver):
 				for m, value in enumerate(padded_cells):
 					if value == 0:
 						self.assignment[(i, m)] = 0
-    
+    	
+     	# simple boxes
+		# simple boxes is a method explained here https://en.wikipedia.org/wiki/Nonogram
+		# it is a method which can solve parts of the puzzle before starting the search.
 		for i, col in enumerate(puzzle.T):
 			index = 0
 			block = 1
@@ -295,8 +302,6 @@ class backtracking_with_prechecking(nonogram_solver):
 				for j, value in enumerate(col):
 					self.assignment[(j, i)] = value
 	
- 
- 
 	def print_assignment(self, assignment):
 		for row in range(self.n_rows):
 			for col in range(self.n_cols):
@@ -396,7 +401,7 @@ class backtracking_with_prechecking(nonogram_solver):
 
 		self.states_visited += 1
 
-		if self.states_visited % 1 == 0:
+		if self.states_visited % 100000 == 0:
 			self.print_assignment(self.assignment)
 			print("states visited: ", self.states_visited)
 			print("current cell = ", current_cell)
@@ -421,6 +426,9 @@ class backtracking_with_prechecking(nonogram_solver):
 				self.assignment[current_cell] = None
 		#print("backtracking...")
 		return False
+
+
+
 
 # backtracking with prechecking with added forward checking
 class forward_checking(nonogram_solver):
@@ -639,7 +647,6 @@ class forward_checking(nonogram_solver):
 		print("------------------------")
 		return self.backtracking_search(puzzle)
 
-
 	def forward_checking(self, puzzle, assignment_temp):
     	# forward checking
 		for i, row in enumerate(puzzle):
@@ -722,8 +729,8 @@ def test_solver(solver, row_constraints, col_constraints):
  
 if __name__ == '__main__':
 	print("################ PROGRAM START #################\n\n")
-	row_constraints = [[1], [1],   [2],   [1,1,1], [1,2]]
-	col_constraints = [[2], [1,1], [3],   [1,1],   [1]]
+	#row_constraints = [[1], [1],   [2],   [1,1,1], [1,2]]
+	#col_constraints = [[2], [1,1], [3],   [1,1],   [1]]
  
 	#row_constraints = [[1], [1,1],   [1],   [1], [5]]
 	#col_constraints = [[2], [2,1], [1],   [1,1],   [1,1]]
@@ -734,8 +741,7 @@ if __name__ == '__main__':
 	#row_constraints = [[7], [1,1,2], [1,1,1,1], [1,2,1], [1,1,1,1], [1,1,2], [7]]
 	#col_constraints = [[7], [1,1], [7], [1,1,1], [1,1,1,1], [2,2], [7]]	
 	
-	#row_constraints = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
-	#col_constraints = [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
+	
 
 	#row_constraints = [[1, 5, 11, 4] ,[3, 3, 9, 2, 1] ,[2, 8, 5, 5] ,[2, 14, 5] ,[2, 4, 4, 2, 6] ,[2, 6, 5, 2] ,
     #                        [11, 7]  ,[6, 3, 3, 6] ,[1, 7, 5, 5] ,[8, 7, 4]  ,[8, 9, 4] , [12, 1, 8] ,[2, 1, 2], [9, 3], 
@@ -745,11 +751,25 @@ if __name__ == '__main__':
 
 	#row_constraints = [[4,5],[3,3],[1,3,2],[10],[10],[7,7],[6,3,1],[6,2],[4,1],[3],[1],[3],[1,5],[2,8],[4,8]]
 	#col_constraints = [[3,1],[3,2],[1,5,3],[3,5,1],[2,5],[2,6],[3],[3,4],[4,4],[5,4],[1,6,1,3],[1,5,3],[2,3,2],[7,2],[6,2]]
+	
+	# 10x10
+	#row_constraints = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
+	#col_constraints = [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
+ 
+	row_constraints =  [[2] ,[1, 2] ,[4] ,[5] ,[5] ,[7] ,[1, 3] ,[2, 3] ,[3, 3] ,[4, 5]]
+	col_constraints = [[9], [4, 3], [4, 2], [4, 1], [4], [2, 5], [2, 5], [3], [1], [1]]
+	
+	# 15x15
+	#row_constraints =  [[4, 5] ,[3, 3] ,[1, 3, 2] ,[10] ,[10] ,[7, 7] ,[6, 3, 1] ,[6, 2] ,[4, 1] ,[3] ,[1] ,[3] ,[1, 5] ,[2, 8] ,[4, 8]]
+	#col_constraints = [[3, 1] ,[3, 2] ,[1, 5, 3] ,[3, 5, 1] ,[2, 5] ,[2, 6 ] ,[3] ,[3,4] ,[4,4] ,[5, 4] ,[1, 6, 1, 3] ,[1, 5, 3] ,[2, 3, 2] ,[7, 2] ,[6, 2]]
+ 
 
-
+ 
 	#test_solver(BF, row_constraints, col_constraints)
+ 
 	test_solver(backtracking_with_prechecking, row_constraints, col_constraints)
-
+ 
+	#test_solver(forward_checking, row_constraints, col_constraints) # does not work
 
 
 	
