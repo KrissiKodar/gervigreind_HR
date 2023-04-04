@@ -1,6 +1,6 @@
 import itertools
 import time
-from nonogram_permutations import nonogram_solver_perm
+from main_permutations import nonogram_solver_perm
 
 
 class brute_force(nonogram_solver_perm):

@@ -42,13 +42,8 @@ class nonogram_solver:
 	def count_groups(self, row_or_col):
 		return len([group for key, group in itertools.groupby(row_or_col) if key == 1])
 
-# start at top left and work down, rows first
-# checks if the row or column sums are larger than the sum of the constraints
-# checks if the number of row or column groups is larger than the number of groups in the constraints
-#
-# when every variable has been assigned it checks if the solution is a valid solution
-# (backtracks if it is not)
-# backtracks at when every variable has been assigned and the solution is not valid
+# backtracking solver, with nothing added, not very efficient
+# but works for small puzzles
 class BF(nonogram_solver):
 	def __init__(self, puzzle, row_constraints, col_constraints):
 		super().__init__(row_constraints, col_constraints)
@@ -162,10 +157,15 @@ class BF(nonogram_solver):
 		return False
 
 
-
+# This is the best solver I have made so far
 # backtracking with prechecking
 class backtracking_with_prechecking(nonogram_solver):
 	def __init__(self, puzzle, row_constraints, col_constraints):
+		print("##########################################################")
+		print("Solving a new puzzle with backtracking with prechecking...")
+		print("# means filled in cell")
+		print(". means non-filled in cell")
+		print("x means unassigned cell\n")
 		super().__init__(row_constraints, col_constraints)
 		self.n_rows = puzzle.shape[0]
 		self.n_cols = puzzle.shape[1]
@@ -276,9 +276,6 @@ class backtracking_with_prechecking(nonogram_solver):
 						if k+1 < len(result) and result[k+1] == 0:
 							group_fill += 1	
 				padded_cells = self.pad_list(test, padding_list)
-				#print("col", i)
-				#print("padded_cells", padded_cells)
-				# where padded cells are 0 make self.assignment[(m, i)] = 0
 				for m, value in enumerate(padded_cells):
 					if value == 0:
 						self.assignment[(m, i)] = 0
@@ -302,6 +299,7 @@ class backtracking_with_prechecking(nonogram_solver):
 				for j, value in enumerate(col):
 					self.assignment[(j, i)] = value
 	
+	# print current assignments
 	def print_assignment(self, assignment):
 		for row in range(self.n_rows):
 			for col in range(self.n_cols):
@@ -313,7 +311,7 @@ class backtracking_with_prechecking(nonogram_solver):
 					print(" x", end="")
 			print()
 		print()
-  
+	# used for simple spaces technique
 	def pad_list(self, test, padding_list):
 		result = [0] * len(test)
 		for i, num in enumerate(test):
@@ -324,7 +322,8 @@ class backtracking_with_prechecking(nonogram_solver):
 					if 0 <= pos < len(test):
 						result[pos] = num
 		return result
- 
+
+	# check if assignment is consistent
 	def is_consistent(self, puzzle, assignment_temp):
 		#row sums and groups
 		for i, row in enumerate(puzzle):
@@ -370,6 +369,7 @@ class backtracking_with_prechecking(nonogram_solver):
 			#	return False
 		return True
 
+	# start the search
 	def start_search(self, puzzle):
 		# where dictionary is not None assign values to puzzle
 		non_determined_cells = 0
@@ -433,7 +433,7 @@ class backtracking_with_prechecking(nonogram_solver):
 		#print("backtracking...")
 		return False
 
-
+# FAILED
 # backtracking with prechecking with added forward checking
 # cursed code (not working)
 class forward_checking(nonogram_solver):
@@ -719,8 +719,9 @@ class forward_checking(nonogram_solver):
 		#print("backtracking...")
 		return False
 
-
+# FAILED
 # another attempt at forward checking
+# this attempt did also not work
 class forward_checking_attempt_2(nonogram_solver):
 	def __init__(self, puzzle, row_constraints, col_constraints):
 		super().__init__(row_constraints, col_constraints)
@@ -956,7 +957,6 @@ class forward_checking_attempt_2(nonogram_solver):
 					assignment[(j, i)] = value
 		return assignment
 
-
 	def backtracking_search(self, puzzle, assignment):
 		# if assignment is complete then return assignment
 		if None not in assignment.values():
@@ -1003,14 +1003,6 @@ class forward_checking_attempt_2(nonogram_solver):
 		return False
 
 
-
-
-
-
-
-
-
-
 def test_solver(solver, row_constraints, col_constraints):
 	puzzle = np.zeros((len(row_constraints), len(col_constraints)))
 	start_time = time.time()	
@@ -1030,6 +1022,10 @@ def test_solver(solver, row_constraints, col_constraints):
  
 if __name__ == '__main__':
 	print("################ PROGRAM START #################\n\n")
+ 
+	# a single puzzle is the row and column constraints!
+ 
+ 	# 5x5 could solve these
 	#row_constraints = [[1], [1],   [2],   [1,1,1], [1,2]]
 	#col_constraints = [[2], [1,1], [3],   [1,1],   [1]]
  
@@ -1038,43 +1034,38 @@ if __name__ == '__main__':
  
 	#row_constraints = [[3], [2,1], [2,2], [1], [2]]
 	#col_constraints = [[4], [3,1], [1],   [3], [1]]
- 
+	
+	# a single 7x7 test case
 	#row_constraints = [[7], [1,1,2], [1,1,1,1], [1,2,1], [1,1,1,1], [1,1,2], [7]]
 	#col_constraints = [[7], [1,1], [7], [1,1,1], [1,1,1,1], [2,2], [7]]	
 	
-	
-
-	#row_constraints = [[1, 5, 11, 4] ,[3, 3, 9, 2, 1] ,[2, 8, 5, 5] ,[2, 14, 5] ,[2, 4, 4, 2, 6] ,[2, 6, 5, 2] ,
-    #                        [11, 7]  ,[6, 3, 3, 6] ,[1, 7, 5, 5] ,[8, 7, 4]  ,[8, 9, 4] , [12, 1, 8] ,[2, 1, 2], [9, 3], 
-    #                         [2], [9], [6], [6], [6], [7], [8], [8], [8], [7], [7]]
-	#col_constraints = [[5,6,4],[7,3,5],[2,7,5],[1,6,6],[1,3,6,6],[1,3,6,7],[7,4,7],[11,6],[4,4,1,4],[1,6,1,3],[7,4,3],[6,5,2],[2,2,3,1,2],[4,4,1,1],[4,7,2],
-    #                     [4,4,1,2],[5,3,1,1],[6,5,1], [2,2,4,1],[5,1,1],[7,1,1,1],[12,1,1],[5,6,3],[1,10,1],[3,8]]
-
-	#row_constraints = [[4,5],[3,3],[1,3,2],[10],[10],[7,7],[6,3,1],[6,2],[4,1],[3],[1],[3],[1,5],[2,8],[4,8]]
-	#col_constraints = [[3,1],[3,2],[1,5,3],[3,5,1],[2,5],[2,6],[3],[3,4],[4,4],[5,4],[1,6,1,3],[1,5,3],[2,3,2],[7,2],[6,2]]
-	
-	# 10x10
-	row_constraints = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
-	col_constraints = [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
+	# 10x10 could solve these
+	row_constraints_10_by_10_1 = [[4,2], [2], [2,4], [1,2], [7], [3,2], [1,3,2], [2,3], [3,2], [3,2]]
+	col_constraints_10_by_10_1= [[2], [1,1], [3], [3,1], [1,6], [6], [1,8], [1,1,1], [5,2], [5,2]]
  
-	#row_constraints =  [[2] ,[1, 2] ,[4] ,[5] ,[5] ,[7] ,[1, 3] ,[2, 3] ,[3, 3] ,[4, 5]]
-	#col_constraints = [[9], [4, 3], [4, 2], [4, 1], [4], [2, 5], [2, 5], [3], [1], [1]]
+	row_constraints_10_by_10_2 =  [[2] ,[1, 2] ,[4] ,[5] ,[5] ,[7] ,[1, 3] ,[2, 3] ,[3, 3] ,[4, 5]]
+	col_constraints_10_by_10_2 = [[9], [4, 3], [4, 2], [4, 1], [4], [2, 5], [2, 5], [3], [1], [1]]
 	
-	# 15x15 (code does not handle that)
+	# 15x15 (program cannot solve puzzles of this size, takes too long)
 	#row_constraints =  [[4, 5] ,[3, 3] ,[1, 3, 2] ,[10] ,[10] ,[7, 7] ,[6, 3, 1] ,[6, 2] ,[4, 1] ,[3] ,[1] ,[3] ,[1, 5] ,[2, 8] ,[4, 8]]
 	#col_constraints = [[3, 1] ,[3, 2] ,[1, 5, 3] ,[3, 5, 1] ,[2, 5] ,[2, 6 ] ,[3] ,[3,4] ,[4,4] ,[5, 4] ,[1, 6, 1, 3] ,[1, 5, 3] ,[2, 3, 2] ,[7, 2] ,[6, 2]]
  
+	# a house with a path, moon and stars
+	# could not solve this
+	row_constraints_house = [[1, 5, 11, 4] ,[3, 3, 9, 2, 1] ,[2, 8, 5, 5] ,[2, 14, 5] ,[2, 4, 4, 2, 6] ,[2, 6, 5, 2] ,
+                            [11, 7]  ,[6, 3, 3, 6] ,[1, 7, 5, 5] ,[8, 7, 4]  ,[8, 9, 4] , [12, 1, 8] ,[2, 1, 2], [9, 3], 
+                            [2], [9], [6], [6], [6], [7], [8], [8], [8], [7], [7]]
+	col_constraints_house = [[5,6,4],[7,3,5],[2,7,5],[1,6,6],[1,3,6,6],[1,3,6,7],[7,4,7],[11,6],[4,4,1,4],[1,6,1,3],[7,4,3],[6,5,2],[2,2,3,1,2],[4,4,1,1],[4,7,2],
+                         [4,4,1,2],[5,3,1,1],[6,5,1], [2,2,4,1],[5,1,1],[7,1,1,1],[12,1,1],[5,6,3],[1,10,1],[3,8]]
+
 
  
 	#test_solver(BF, row_constraints, col_constraints)
- 
-	#test_solver(backtracking_with_prechecking, row_constraints, col_constraints)
- 
-	test_solver(forward_checking_attempt_2, row_constraints, col_constraints) # does not work
-
-
 	
 
-	
-	
+	test_solver(backtracking_with_prechecking, row_constraints_10_by_10_1, col_constraints_10_by_10_1)
+	test_solver(backtracking_with_prechecking, row_constraints_10_by_10_2 , col_constraints_10_by_10_2)
+  
+	#test_solver(backtracking_with_prechecking, row_constraints_house, col_constraints_house)
 
+	#test_solver(forward_checking_attempt_2, row_constraints, col_constraints) # does not work

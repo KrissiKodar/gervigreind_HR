@@ -182,4 +182,5 @@ if __name__ == "__main__":
     # Plot the metrics
     #plot_metrics(results)
     
-    test_solver(AC3_organized, puzzle_7_by_7)
+    #test_solver(AC3_organized, puzzle_7_by_7)
+    test_solver(AC3_organized, puzzle_10_by_10)
